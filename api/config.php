@@ -4,7 +4,7 @@
 // STATIC DATABASE CONFIG
 // =======================
 define('DB_HOST', 'shortline.proxy.rlwy.net');
-define('DB_NAME', 'shikhbo');
+define('DB_NAME', 'railway');
 define('DB_USER', 'root');
 define('DB_PASS', 'fjEvGLOytnFmjDPIOXbVtrpLMIGotaFv');
 define('DB_PORT', 14989);
