@@ -4,7 +4,7 @@
 // Database Configuration
 define('DB_HOST', 'mysql.railway.internal');
 define('DB_NAME', 'shikbo');
-define('DB_USER', 'root');
+define('DB_USER', 'robi');
 define('DB_PASS', 'Nafia2Naoshin');
 
 // Google OAuth2 Configuration - BOTH CLIENT IDs
