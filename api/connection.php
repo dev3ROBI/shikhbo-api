@@ -29,7 +29,7 @@ class Database {
                 "status" => "error",
                 "message" => "Database connection failed",
                 "error" => $e->getMessage()
-            ]));
+            ], JSON_UNESCAPED_UNICODE));
         }
     }
 }
@@ -37,4 +37,16 @@ class Database {
 // GLOBAL connection
 $database = new Database();
 $conn = $database->connect();
+
+// ✅ SUCCESS RESPONSE (optional test mode)
+if (isset($_GET['test'])) {
+    echo json_encode([
+        "status" => "success",
+        "message" => "Database connected successfully 🚀",
+        "db" => DB_NAME,
+        "host" => DB_HOST,
+        "port" => DB_PORT
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 ?>
