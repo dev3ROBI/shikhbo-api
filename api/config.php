@@ -3,7 +3,7 @@
 
 // Database Configuration
 define('DB_HOST', 'mysql.railway.internal');
-define('DB_NAME', 'shikbo');
+define('DB_NAME', 'shikhbo');
 define('DB_USER', 'robi');
 define('DB_PASS', 'Nafia2Naoshin');
 
