@@ -3,11 +3,11 @@
 // =======================
 // STATIC DATABASE CONFIG
 // =======================
-define('DB_HOST', 'mysql-production-556a.up.railway.app');
+define('DB_HOST', 'shortline.proxy.rlwy.net');
 define('DB_NAME', 'shikhbo');
-define('DB_USER', 'robi');
-define('DB_PASS', 'Nafia2Naoshin');
-define('DB_PORT', 3306);
+define('DB_USER', 'root');
+define('DB_PASS', 'fjEvGLOytnFmjDPIOXbVtrpLMIGotaFv');
+define('DB_PORT', 14989);
 
 // =======================
 // MYSQL CONNECTION
