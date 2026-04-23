@@ -1,5 +1,5 @@
 /* ========================================================
-   Shikhbo Admin Panel - Custom Styles
+   Shikhbo Admin Panel - Enhanced Custom Styles
    ======================================================== */
 
 /* ---------- Sidebar Transition ---------- */
@@ -10,13 +10,12 @@
     transform: translateX(0);
 }
 
-/* ---------- Smooth transitions for cards ---------- */
+/* ---------- Smooth Card Hover ---------- */
 .hover\:shadow-lg:hover {
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* ---------- Custom Scrollbar for main content ---------- */
-/* Webkit browsers */
+/* ---------- Custom Scrollbar ---------- */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -31,25 +30,23 @@
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
-
-/* Firefox */
 * {
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
-/* ---------- Table row hover ---------- */
+/* ---------- Table Enhancements ---------- */
 tr:hover {
     background-color: #f8fafc;
 }
 
-/* ---------- Active navigation item ---------- */
+/* ---------- Active Navigation ---------- */
 .nav-active {
     background-color: #4F46E5;
     color: white;
 }
 
-/* ---------- Dropdown animation ---------- */
+/* ---------- Dropdown Animation ---------- */
 .dropdown-enter {
     opacity: 0;
     transform: scale(0.95) translateY(-10px);
@@ -60,15 +57,40 @@ tr:hover {
     transition: all 0.2s ease-out;
 }
 
-/* ---------- Responsive adjustments ---------- */
+/* ---------- Responsive ---------- */
 @media (max-width: 1024px) {
     .sidebar-open {
         overflow: hidden;
     }
 }
 
-/* ---------- Custom focus ring for inputs ---------- */
+/* ---------- Focus Rings ---------- */
 input:focus, select:focus, textarea:focus {
     outline: none;
     ring: 2px solid #4F46E5;
+}
+
+/* ---------- Loading Spinner ---------- */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* ---------- Toast Notifications ---------- */
+.toast {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    color: white;
+    font-weight: 500;
+    z-index: 100;
+    animation: slideIn 0.3s ease-out;
+}
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }

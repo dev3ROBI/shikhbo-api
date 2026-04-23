@@ -1,5 +1,5 @@
 // ========================================================
-// Shikhbo Admin Panel - Custom JavaScript
+// Shikhbo Admin Panel - Enhanced Custom JavaScript
 // ========================================================
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -48,7 +48,6 @@ document.addEventListener('DOMContentLoaded', function () {
             profileMenu.classList.toggle('hidden');
         });
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function (e) {
             if (!profileButton.contains(e.target) && !profileMenu.contains(e.target)) {
                 profileMenu.classList.add('hidden');
@@ -56,28 +55,34 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ---------- Active Navigation Highlight ----------
-    const navLinks = document.querySelectorAll('nav a');
-    const currentPath = window.location.pathname;
+    // ---------- Session Timeout Warning ----------
+    let sessionTimeout;
+    const SESSION_DURATION = 1800000; // 30 minutes
+    const WARNING_BEFORE = 300000; // 5 minutes before
 
-    navLinks.forEach(link => {
-        if (link.getAttribute('href') === currentPath || 
-            (currentPath.endsWith('/') && link.getAttribute('href') === 'index.php')) {
-            link.classList.add('bg-shikhbo-primary', 'text-white');
-            link.classList.remove('text-gray-600', 'hover:bg-gray-100', 'hover:text-shikhbo-primary');
-        }
-    });
+    function resetSessionTimer() {
+        clearTimeout(sessionTimeout);
+        sessionTimeout = setTimeout(function() {
+            if (confirm('Your session is about to expire. Would you like to continue?')) {
+                window.location.reload();
+            } else {
+                window.location.href = '/pages/logout.php';
+            }
+        }, SESSION_DURATION - WARNING_BEFORE);
+    }
+
+    document.addEventListener('click', resetSessionTimer);
+    document.addEventListener('keypress', resetSessionTimer);
+    resetSessionTimer();
 
     // ---------- Mobile Responsive Helper ----------
     function handleResize() {
         if (window.innerWidth >= 1024) {
-            // Ensure sidebar is visible on desktop
             sidebar.classList.remove('-translate-x-full');
             sidebar.classList.add('translate-x-0');
             sidebarOverlay.classList.add('hidden');
             document.body.classList.remove('sidebar-open');
         } else {
-            // Hide sidebar on mobile initially
             if (!sidebar.classList.contains('open')) {
                 sidebar.classList.add('-translate-x-full');
                 sidebar.classList.remove('translate-x-0');
@@ -86,6 +91,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     window.addEventListener('resize', handleResize);
-    handleResize(); // Initial check
+    handleResize();
+
+    // ---------- Keyboard Shortcuts ----------
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'd') {
+            e.preventDefault();
+            window.location.href = 'index.php?page=dashboard';
+        } else if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            window.location.href = 'index.php?page=students';
+        }
+    });
 
 });
