@@ -1,20 +1,24 @@
 <?php
 
-// Database (Railway ENV)
-define('DB_HOST', getenv("MYSQLHOST"));
-define('DB_NAME', getenv("MYSQLDATABASE"));
-define('DB_USER', getenv("MYSQLUSER"));
-define('DB_PASS', getenv("MYSQLPASSWORD"));
-define('DB_PORT', getenv("MYSQLPORT"));
+$host = getenv("MYSQLHOST");
+$user = getenv("MYSQLUSER");
+$pass = getenv("MYSQLPASSWORD");
+$db   = getenv("MYSQLDATABASE");
+$port = getenv("MYSQLPORT") ?: 3306;
 
-// MySQL connection
-$conn = new mysqli(
-    DB_HOST,
-    DB_USER,
-    DB_PASS,
-    DB_NAME,
-    DB_PORT
-);
+if (!$host || !$user || !$pass || !$db) {
+    die(json_encode([
+        "status" => "error",
+        "message" => "ENV variables not loaded",
+        "debug" => [
+            "host" => $host,
+            "user" => $user,
+            "db"   => $db
+        ]
+    ]));
+}
+
+$conn = new mysqli($host, $user, $pass, $db, $port);
 
 if ($conn->connect_error) {
     die(json_encode([
@@ -22,6 +26,8 @@ if ($conn->connect_error) {
         "message" => $conn->connect_error
     ]));
 }
+
+$conn->set_charset("utf8mb4");
 
 // Google OAuth2
 define('GOOGLE_CLIENT_ID_WEB', '151985259285-nvemiiq9gg5lh7ap27vcrv25jv930ddm.apps.googleusercontent.com');
