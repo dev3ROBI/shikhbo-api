@@ -1,32 +1,24 @@
 <?php
 
 // =======================
-// ENV LOADER (SAFE)
+// STATIC DATABASE CONFIG
 // =======================
-$host = getenv("MYSQLHOST");
-$user = getenv("MYSQLUSER");
-$pass = getenv("MYSQLPASSWORD");
-$db   = getenv("MYSQLDATABASE");
-$port = getenv("MYSQLPORT") ?: 3306;
-
-// DEBUG MODE (REMOVE IN PRODUCTION IF YOU WANT)
-if (!$host || !$user || !$pass || !$db) {
-    http_response_code(500);
-    die(json_encode([
-        "status" => "error",
-        "message" => "ENV variables not loaded",
-        "debug" => [
-            "MYSQLHOST" => $host,
-            "MYSQLUSER" => $user,
-            "MYSQLDATABASE" => $db
-        ]
-    ]));
-}
+define('DB_HOST', 'mysql-production-556a.up.railway.app');
+define('DB_NAME', 'shikhbo');
+define('DB_USER', 'robi');
+define('DB_PASS', 'Nafia2Naoshin');
+define('DB_PORT', 3306);
 
 // =======================
 // MYSQL CONNECTION
 // =======================
-$conn = new mysqli($host, $user, $pass, $db, $port);
+$conn = new mysqli(
+    DB_HOST,
+    DB_USER,
+    DB_PASS,
+    DB_NAME,
+    DB_PORT
+);
 
 if ($conn->connect_error) {
     http_response_code(500);
