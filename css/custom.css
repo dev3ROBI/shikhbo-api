@@ -1,0 +1,74 @@
+/* ========================================================
+   Shikhbo Admin Panel - Custom Styles
+   ======================================================== */
+
+/* ---------- Sidebar Transition ---------- */
+.sidebar {
+    transition: transform 0.3s ease-in-out;
+}
+.sidebar.open {
+    transform: translateX(0);
+}
+
+/* ---------- Smooth transitions for cards ---------- */
+.hover\:shadow-lg:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* ---------- Custom Scrollbar for main content ---------- */
+/* Webkit browsers */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+/* ---------- Table row hover ---------- */
+tr:hover {
+    background-color: #f8fafc;
+}
+
+/* ---------- Active navigation item ---------- */
+.nav-active {
+    background-color: #4F46E5;
+    color: white;
+}
+
+/* ---------- Dropdown animation ---------- */
+.dropdown-enter {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+}
+.dropdown-enter-active {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    transition: all 0.2s ease-out;
+}
+
+/* ---------- Responsive adjustments ---------- */
+@media (max-width: 1024px) {
+    .sidebar-open {
+        overflow: hidden;
+    }
+}
+
+/* ---------- Custom focus ring for inputs ---------- */
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    ring: 2px solid #4F46E5;
+}
