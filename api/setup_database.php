@@ -131,6 +131,24 @@ CREATE TABLE IF NOT EXISTS referral_rewards (
 ");
 
 // =======================
+// LOGIN ATTEMPTS TABLE
+// =======================
+$server->query("
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(45) NOT NULL,
+    success TINYINT(1) NOT NULL DEFAULT 0,
+    attempt_time DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_email (email),
+    INDEX idx_ip (ip_address),
+    INDEX idx_attempt_time (attempt_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+");
+
+// =======================
 // RESPONSE
 // =======================
 echo json_encode([
