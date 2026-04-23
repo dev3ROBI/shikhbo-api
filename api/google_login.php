@@ -82,7 +82,7 @@ function getMessage($key,$lang='en'){
 
 // ---- VERIFY GOOGLE TOKEN ----
 $EXPECTED_AUDIENCES = [
-    '151985259285-nvemiiq9gg5lh7ap27vcrv25jv930ddm.apps.googleusercontent.com',
+    '151985259285-p2mfgn1dpi1g5svcgeqkd2n85sobasjc.apps.googleusercontent.com',
     '151985259285-9vp42do9jbkl0gv5rv25hhi3u74t7sp9.apps.googleusercontent.com'
 ];
 
