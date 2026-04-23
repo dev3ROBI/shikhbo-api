@@ -1,39 +1,40 @@
 <?php
-// connection.php
 require_once 'config.php';
 
 class Database {
-    private $host = DB_HOST;
-    private $db_name = DB_NAME;
-    private $username = DB_USER;
-    private $password = DB_PASS;
-    public $conn;
+    private $conn;
 
-    public function getConnection() {
-        $this->conn = null;
+    public function connect() {
         try {
-            $this->conn = new mysqli($this->host, $this->username, $this->password, $this->db_name);
-            
+            $this->conn = new mysqli(
+                DB_HOST,
+                DB_USER,
+                DB_PASS,
+                DB_NAME,
+                DB_PORT
+            );
+
             if ($this->conn->connect_error) {
-                throw new Exception("Connection failed: " . $this->conn->connect_error);
+                throw new Exception($this->conn->connect_error);
             }
-            
+
             $this->conn->set_charset("utf8mb4");
-            
-        } catch (Exception $exception) {
-            error_log("Database connection error: " . $exception->getMessage());
-            throw $exception;
+
+            return $this->conn;
+
+        } catch (Exception $e) {
+            http_response_code(500);
+
+            die(json_encode([
+                "status" => "error",
+                "message" => "Database connection failed",
+                "error" => $e->getMessage()
+            ]));
         }
-        return $this->conn;
     }
 }
 
-// Create database instance
+// GLOBAL connection
 $database = new Database();
-try {
-    $conn = $database->getConnection();
-} catch (Exception $e) {
-    echo json_encode(["status" => "error", "message" => "Database connection failed"]);
-    exit;
-}
+$conn = $database->connect();
 ?>
