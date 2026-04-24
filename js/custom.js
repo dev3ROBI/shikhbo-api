@@ -1,6 +1,6 @@
 // ========================================================
-// Shikhbo Admin Panel — Enhanced JS v4
-// Notification Panel · Tickets · Mobile Optimised
+// Shikhbo Admin Panel — Enhanced JS v5
+// Notification Panel · Tickets · Mobile Optimised · Dark/Light Mode Toggle
 // ========================================================
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -97,6 +97,42 @@ document.addEventListener('DOMContentLoaded', function () {
         if (ticketPanel && !ticketButton.contains(e.target) && !ticketPanel.contains(e.target)) closePanel(ticketPanel);
     });
 
+    // ── Dark / Light Mode Toggle ──
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+            if (themeIcon) {
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            }
+        } else {
+            document.documentElement.classList.remove('dark');
+            if (themeIcon) {
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+            }
+        }
+        localStorage.setItem('shikhbo-theme', theme);
+    }
+
+    // Determine initial theme
+    const savedTheme = localStorage.getItem('shikhbo-theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        applyTheme('dark');
+    } else {
+        applyTheme('light');
+    }
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            const isDark = document.documentElement.classList.contains('dark');
+            applyTheme(isDark ? 'light' : 'dark');
+        });
+    }
+
     // ── Toast ──
     window.showToast = function(message, type = 'info', duration = 4000) {
         const container = document.getElementById('toastContainer');
@@ -166,8 +202,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ── Ticket Modal Functions (global) ──
 function openTicketModal() {
+    const ticketPanel = document.getElementById('ticketPanel');
+    if (ticketPanel) {
+        ticketPanel.classList.add('opacity-0','scale-95','hidden');
+        ticketPanel.classList.remove('opacity-100','scale-100');
+    }
     document.getElementById('ticketModal').classList.remove('hidden');
-    closePanel(document.getElementById('ticketPanel'));
 }
 function closeTicketModal() { document.getElementById('ticketModal').classList.add('hidden'); }
 function submitTicket(e) {

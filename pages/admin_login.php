@@ -164,5 +164,6 @@ if (isset($_GET['expired'])) {
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Signing in...</span>';
         });
     </script>
+    <script src="/js/custom.js"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Shikhbo Admin Panel — Full‑Width Header + Navigation (Sidebar Removed)
+ * Shikhbo Admin Panel — Header + Sidebar (No horizontal nav)
  */
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/security.php';
@@ -74,8 +74,10 @@ $navItems = [
 <!-- ===== FULL WIDTH HEADER ===== -->
 <header class="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-900 dark:to-purple-900 shadow-lg">
     <div class="flex items-center justify-between h-16 px-4 lg:px-8">
-        <!-- Mobile menu toggle (no sidebar anymore, we keep it for potential future use or remove) -->
-        <div class="lg:hidden w-10"></div> <!-- placeholder to keep alignment -->
+        <!-- Mobile menu toggle for sidebar -->
+        <button id="sidebarToggle" class="lg:hidden text-white hover:text-gray-200 p-2 rounded-md flex-shrink-0">
+            <i class="fa-solid fa-bars text-xl"></i>
+        </button>
 
         <!-- Logo + Web Name -->
         <div class="flex items-center space-x-3">
@@ -168,28 +170,53 @@ $navItems = [
     </div>
 </header>
 
-<!-- ===== HORIZONTAL NAVIGATION (FULL WIDTH) ===== -->
-<nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-4 lg:px-8">
-    <ul class="flex items-center space-x-1 overflow-x-auto py-2">
-        <?php foreach ($navItems as [$navPage, $navIcon, $navLabel]): $isActive = ($page === $navPage); ?>
-            <li>
-                <a href="index.php?page=<?php echo $navPage; ?>"
-                   class="flex items-center px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap
-                          <?php echo $isActive ? 'bg-shikhbo-primary text-white shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-shikhbo-primary'; ?>">
-                    <i class="fa-solid <?php echo $navIcon; ?> mr-1.5 text-[10px]"></i>
-                    <?php echo $navLabel; ?>
-                </a>
-            </li>
-        <?php endforeach; ?>
-    </ul>
-</nav>
+<!-- ===== MAIN LAYOUT: SIDEBAR + CONTENT ===== -->
+<div class="flex flex-1 overflow-hidden" style="height: calc(100vh - 64px);">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar w-64 bg-white dark:bg-gray-900 shadow-lg flex-shrink-0 overflow-y-auto transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 -translate-x-full fixed inset-y-0 left-0 z-50">
+        <div class="flex items-center justify-between h-16 px-5 border-b border-gray-200 dark:border-gray-700">
+            <a href="index.php" class="flex items-center space-x-2 flex-shrink-0">
+                <div class="w-9 h-9 bg-gradient-to-br from-shikhbo-primary to-indigo-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-graduation-cap text-white text-sm"></i>
+                </div>
+                <span class="text-xl font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Shikhbo</span>
+            </a>
+            <button id="sidebarClose" class="lg:hidden text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
+        <nav class="mt-3 px-2 flex-1 overflow-y-auto" style="max-height: calc(100vh - 140px);">
+            <ul class="space-y-0.5">
+                <?php foreach ($navItems as [$navPage, $navIcon, $navLabel]): $isActive = ($page === $navPage); ?>
+                    <li>
+                        <a href="index.php?page=<?php echo $navPage; ?>"
+                           class="nav-link flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200
+                                  <?php echo $isActive ? 'bg-shikhbo-primary text-white shadow-md shadow-indigo-200' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-shikhbo-primary'; ?>">
+                            <span class="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0
+                                         <?php echo $isActive ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'; ?> mr-3">
+                                <i class="fa-solid <?php echo $navIcon; ?> text-sm w-4 text-center"></i>
+                            </span>
+                            <span class="truncate"><?php echo $navLabel; ?></span>
+                            <?php if ($isActive): ?><span class="ml-auto w-1.5 h-6 bg-white rounded-full flex-shrink-0"></span><?php endif; ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </nav>
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center space-x-3">
+                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin['name']); ?>&background=4F46E5&color=fff&size=36" alt="" class="w-9 h-9 rounded-full flex-shrink-0">
+                <div class="flex-1 min-w-0"><p class="text-sm font-medium text-gray-700 dark:text-gray-200 truncate"><?php echo sanitizeOutput($admin['name']); ?></p><p class="text-xs text-gray-400 dark:text-gray-500 truncate"><?php echo sanitizeOutput($admin['email']); ?></p></div>
+            </div>
+        </div>
+    </aside>
 
-<!-- ===== MAIN CONTENT (FULL WIDTH, SCROLLABLE) ===== -->
-<main id="mainContent" class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 lg:p-8 transition-opacity duration-200" style="scroll-behavior:smooth;">
-    <?php include $pageFile; ?>
-</main>
+    <!-- Main Content -->
+    <main id="mainContent" class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 lg:p-8 transition-opacity duration-200" style="scroll-behavior:smooth;">
+        <?php include $pageFile; ?>
+    </main>
+</div>
 
-<!-- ===== MODALS & TOAST ===== -->
+<!-- Mobile overlay -->
+<div id="sidebarOverlay" class="fixed inset-0 z-40 bg-black bg-opacity-50 hidden lg:hidden backdrop-blur-sm transition-opacity duration-300"></div>
 <div id="toastContainer" class="fixed bottom-4 right-4 z-[100] flex flex-col-reverse space-y-reverse space-y-2"></div>
 
 <!-- Ticket Modal -->
