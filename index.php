@@ -13,7 +13,7 @@ $admin = getCurrentAdmin();
 
 // Determine which page to load
 $page = $_GET['page'] ?? 'dashboard';
-$allowedPages = ['dashboard', 'students', 'admins', 'settings', 'exams', 'questions', 'results'];
+$allowedPages = ['dashboard', 'students', 'admins', 'settings', 'exams', 'questions', 'results', 'categories', 'database'];
 
 if (!in_array($page, $allowedPages)) {
     $page = 'dashboard';
@@ -34,11 +34,14 @@ $pageTitles = [
     'exams' => 'Exams Management',
     'questions' => 'Question Bank',
     'results' => 'Exam Results',
+    'categories' => 'Exam Categories',
+    'database' => 'Database Console'
 ];
 $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -67,13 +70,15 @@ $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/custom.css">
 </head>
+
 <body class="bg-gray-50 font-sans antialiased">
 
     <!-- Wrapper: Sidebar + Main Content -->
     <div class="flex h-screen overflow-hidden">
 
         <!-- ============ SIDEBAR ============ -->
-        <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 -translate-x-full">
+        <aside id="sidebar"
+            class="sidebar fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 -translate-x-full">
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200">
                 <a href="index.php" class="flex items-center space-x-2">
@@ -89,56 +94,72 @@ $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
             <nav class="mt-6 px-4">
                 <ul class="space-y-2">
                     <li>
-                        <a href="index.php?page=dashboard" 
-                           class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                        <a href="index.php?page=dashboard"
+                            class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
                            <?php echo $page === 'dashboard' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
                             <i class="fa-solid fa-chart-pie w-5 h-5 mr-3"></i>
                             Dashboard
                         </a>
                     </li>
                     <li>
-                        <a href="index.php?page=exams" 
-                           class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                        <a href="index.php?page=categories"
+                            class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                            <?php echo $page === 'categories' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
+                            <i class="fa-solid fa-layer-group w-5 h-5 mr-3"></i>
+                            Categories
+                        </a>
+                    </li>
+                    <li>
+                        <a href="index.php?page=exams"
+                            class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
                            <?php echo $page === 'exams' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
                             <i class="fa-solid fa-file-alt w-5 h-5 mr-3"></i>
                             Exams
                         </a>
                     </li>
                     <li>
-                        <a href="index.php?page=questions" 
-                           class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                        <a href="index.php?page=questions"
+                            class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
                            <?php echo $page === 'questions' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
                             <i class="fa-solid fa-database w-5 h-5 mr-3"></i>
                             Question Bank
                         </a>
                     </li>
                     <li>
-                        <a href="index.php?page=students" 
-                           class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                        <a href="index.php?page=students"
+                            class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
                            <?php echo $page === 'students' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
                             <i class="fa-solid fa-users w-5 h-5 mr-3"></i>
                             Students
                         </a>
                     </li>
                     <li>
-                        <a href="index.php?page=results" 
-                           class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                        <a href="index.php?page=results"
+                            class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
                            <?php echo $page === 'results' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
                             <i class="fa-solid fa-chart-bar w-5 h-5 mr-3"></i>
                             Results
                         </a>
                     </li>
                     <li>
-                        <a href="index.php?page=admins" 
-                           class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                        <a href="index.php?page=admins"
+                            class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
                            <?php echo $page === 'admins' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
                             <i class="fa-solid fa-user-gear w-5 h-5 mr-3"></i>
                             Admins
                         </a>
                     </li>
                     <li>
-                        <a href="index.php?page=settings" 
-                           class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                        <a href="index.php?page=database"
+                            class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                            <?php echo $page === 'database' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
+                            <i class="fa-solid fa-terminal w-5 h-5 mr-3"></i>
+                            Database
+                        </a>
+                    </li>
+                    <li>
+                        <a href="index.php?page=settings"
+                            class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
                            <?php echo $page === 'settings' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
                             <i class="fa-solid fa-cog w-5 h-5 mr-3"></i>
                             Settings
@@ -175,32 +196,40 @@ $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
                     <!-- Right side actions -->
                     <div class="flex items-center space-x-3 ml-auto">
                         <!-- CSRF Token (for AJAX calls) -->
-                        <input type="hidden" id="csrf_token" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                        <input type="hidden" id="csrf_token" name="csrf_token"
+                            value="<?php echo generateCSRFToken(); ?>">
 
                         <!-- Notifications -->
-                        <button class="relative p-2 text-gray-500 hover:text-shikhbo-primary rounded-full hover:bg-gray-100">
+                        <button
+                            class="relative p-2 text-gray-500 hover:text-shikhbo-primary rounded-full hover:bg-gray-100">
                             <i class="fa-solid fa-bell text-xl"></i>
-                            <span class="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
+                            <span
+                                class="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
                         </button>
 
                         <!-- Profile Dropdown -->
                         <div class="relative" id="profileDropdown">
-                            <button id="profileButton" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100">
-                                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin['name']); ?>&background=4F46E5&color=fff" 
-                                     alt="<?php echo sanitizeOutput($admin['name']); ?>" class="w-8 h-8 rounded-full">
+                            <button id="profileButton"
+                                class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100">
+                                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin['name']); ?>&background=4F46E5&color=fff"
+                                    alt="<?php echo sanitizeOutput($admin['name']); ?>" class="w-8 h-8 rounded-full">
                                 <span class="text-sm font-medium text-gray-700 hidden md:block">
                                     <?php echo sanitizeOutput($admin['name']); ?>
                                 </span>
                                 <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
                             </button>
-                            <div id="profileMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 hidden z-50">
+                            <div id="profileMenu"
+                                class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 hidden z-50">
                                 <div class="px-4 py-2 border-b border-gray-100">
-                                    <p class="text-sm font-medium text-gray-800"><?php echo sanitizeOutput($admin['name']); ?></p>
+                                    <p class="text-sm font-medium text-gray-800">
+                                        <?php echo sanitizeOutput($admin['name']); ?></p>
                                     <p class="text-xs text-gray-500"><?php echo sanitizeOutput($admin['email']); ?></p>
                                 </div>
-                                <a href="index.php?page=settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                                <a href="index.php?page=settings"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
                                 <hr class="my-1">
-                                <a href="/pages/logout.php" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</a>
+                                <a href="/pages/logout.php"
+                                    class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</a>
                             </div>
                         </div>
                     </div>
@@ -220,4 +249,5 @@ $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
     <!-- Custom JavaScript -->
     <script src="/js/custom.js"></script>
 </body>
+
 </html>
