@@ -1,6 +1,7 @@
 <?php
 /**
  * Shikhbo Admin Panel — Header + Sidebar (No horizontal nav)
+ * Logo visibility: desktop = header logo, mobile = sidebar logo
  */
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/security.php';
@@ -79,8 +80,8 @@ $navItems = [
             <i class="fa-solid fa-bars text-xl"></i>
         </button>
 
-        <!-- Logo + Web Name -->
-        <div class="flex items-center space-x-3">
+        <!-- Logo + Web Name (visible on desktop only) -->
+        <div class="hidden lg:flex items-center space-x-3">
             <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg">
                 <i class="fa-solid fa-graduation-cap text-2xl text-white"></i>
             </div>
@@ -174,15 +175,18 @@ $navItems = [
 <div class="flex flex-1 overflow-hidden" style="height: calc(100vh - 64px);">
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar w-64 bg-white dark:bg-gray-900 shadow-lg flex-shrink-0 overflow-y-auto transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 -translate-x-full fixed inset-y-0 left-0 z-50">
-        <div class="flex items-center justify-between h-16 px-5 border-b border-gray-200 dark:border-gray-700">
+        <!-- Sidebar header: visible on mobile only (logo + close btn) -->
+        <div class="lg:hidden flex items-center justify-between h-16 px-5 border-b border-gray-200 dark:border-gray-700">
             <a href="index.php" class="flex items-center space-x-2 flex-shrink-0">
                 <div class="w-9 h-9 bg-gradient-to-br from-shikhbo-primary to-indigo-400 rounded-lg flex items-center justify-center flex-shrink-0">
                     <i class="fa-solid fa-graduation-cap text-white text-sm"></i>
                 </div>
                 <span class="text-xl font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Shikhbo</span>
             </a>
-            <button id="sidebarClose" class="lg:hidden text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <button id="sidebarClose" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
+
+        <!-- Navigation (visible always) -->
         <nav class="mt-3 px-2 flex-1 overflow-y-auto" style="max-height: calc(100vh - 140px);">
             <ul class="space-y-0.5">
                 <?php foreach ($navItems as [$navPage, $navIcon, $navLabel]): $isActive = ($page === $navPage); ?>
