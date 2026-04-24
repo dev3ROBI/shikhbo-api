@@ -232,38 +232,6 @@ $navItems = [
         </form>
     </div>
 </div>
-
-<script>
-// ========================================================
-// THEME MANAGER
-// ========================================================
-(function() {
-    const html = document.documentElement;
-    const toggleBtn = document.getElementById('themeToggle');
-    const icon = document.getElementById('themeIcon');
-
-    const savedTheme = localStorage.getItem('shikhbo-theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        html.classList.add('dark');
-        if (icon) icon.classList.replace('fa-moon', 'fa-sun');
-    }
-
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                localStorage.setItem('shikhbo-theme', 'light');
-                if (icon) icon.classList.replace('fa-sun', 'fa-moon');
-            } else {
-                html.classList.add('dark');
-                localStorage.setItem('shikhbo-theme', 'dark');
-                if (icon) icon.classList.replace('fa-moon', 'fa-sun');
-            }
-        });
-    }
-})();
-</script>
-
 <script src="/js/custom.js"></script>
 </body>
 </html>

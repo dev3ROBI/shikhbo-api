@@ -65,7 +65,7 @@ if (isset($_GET['expired'])) {
             min-height: 100vh;
         }
         .dark body {
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+            background: linear-gradient(135deg, #19172d 0%, #201f56 50%, #1e1b4b 100%);
         }
         .login-card {
             backdrop-filter: blur(10px);
