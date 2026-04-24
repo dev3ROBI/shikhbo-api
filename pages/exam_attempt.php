@@ -65,21 +65,18 @@ if ($examId <= 0):
             return;
         }
 
-        // Animate chevron
         chevron.style.transform = 'rotate(180deg)';
-        // Show loading
         childrenDiv.classList.remove('hidden');
         childrenDiv.innerHTML = '<div class="p-4 text-center text-sm text-gray-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading subcategories...</div>';
 
         try {
             const [catRes, examRes] = await Promise.all([
                 fetch(`/api/get_categories.php?parent_id=${catId}`),
-                fetch(`/api/get_exams_by_category.php?category_id=${catId}`)
+                fetch(`/api/get_exams_by_category.php?category_id=${catId}&direct=1`)  // ✅ direct=1
             ]);
             const catData = await catRes.json();
             const examData = await examRes.json();
 
-            // Render children
             if (catData.status === 'success' && catData.categories.length > 0) {
                 childrenDiv.innerHTML = catData.categories.map(c => {
                     const icon = c.icon || typeIcons[c.category_type] || 'fa-folder';
@@ -102,7 +99,6 @@ if ($examId <= 0):
                 childrenDiv.innerHTML = '';
             }
 
-            // Render exams
             if (examData.status === 'success' && examData.exams.length > 0) {
                 examsDiv.innerHTML = '<div class="p-3 space-y-2">' + examData.exams.map(e => `
                     <a href="index.php?page=exam_attempt&exam_id=${e.id}" class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition border border-indigo-100">
@@ -116,7 +112,6 @@ if ($examId <= 0):
                 examsDiv.classList.remove('hidden');
             }
 
-            // If no children, hide children container
             if (!catData.categories || catData.categories.length === 0) {
                 childrenDiv.classList.add('hidden');
             }
@@ -144,7 +139,7 @@ if ($examId <= 0):
         try {
             const [catRes, examRes] = await Promise.all([
                 fetch(`/api/get_categories.php?parent_id=${catId}`),
-                fetch(`/api/get_exams_by_category.php?category_id=${catId}`)
+                fetch(`/api/get_exams_by_category.php?category_id=${catId}&direct=1`)  // ✅ direct=1
             ]);
             const catData = await catRes.json();
             const examData = await examRes.json();
