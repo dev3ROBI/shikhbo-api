@@ -1,48 +1,69 @@
-# 🚀 Shikhbo API
+# 🚀 Shikhbo API + Admin Panel
 
-Modern REST API for the **Shikhbo Android Application**
+Modern REST API for the **Shikhbo Android Application**  
+plus a secure **Web Admin Dashboard** for managing exams, students, and results.
+
 Built with PHP + MySQL • Deployed on Render • Database on Railway
 
 ---
 
-## 🌐 Base URL
+## 🌐 URLs
 
-```
-https://shikhbo-api.onrender.com/api/
-```
+| Service      | URL                                     |
+| ------------ | --------------------------------------- |
+| **API**      | `https://shikhbo-api.onrender.com/api/` |
+| **Admin**    | `https://shikhbo-api.onrender.com/`     |
 
 ---
 
 ## ✨ Features
 
-* 🔐 Google Authentication (OAuth 2.0)
-* 👤 User Registration & Login
-* 🎁 Referral System (Auto Rewards)
-* 🖼 Profile Image Handling
-* 🔑 Token-based Authentication
-* 🌍 Multi-language Support (EN / BN)
-* ⚡ Fast & Scalable API Architecture
+### 📱 Mobile API
+- 🔐 Google Authentication (OAuth 2.0)
+- 👤 User Registration & Login
+- 🎁 Referral System (Auto Rewards)
+- 🖼 Profile Image Handling
+- 🔑 Token-based Authentication
+- 🌍 Multi-language Support (EN / BN)
+
+### 🖥 Admin Panel (Web)
+- 📊 Dashboard with real‑time stats
+- 👥 Student Management (view, suspend, delete)
+- 📝 Exam & Question Management
+- 📈 Result Analytics with progress bars
+- 👤 Admin Management (add/remove admins)
+- 🔒 High‑security session handling
+- 🛡 CSRF Protection, Rate Limiting, SQL Injection Prevention
+- 📱 Fully responsive (Tailwind CSS)
 
 ---
 
 ## 🧩 Tech Stack
 
-| Layer    | Technology       |
-| -------- | ---------------- |
-| Backend  | PHP (Custom API) |
-| Database | MySQL (Railway)  |
-| Hosting  | Render           |
-| Auth     | Google OAuth     |
+| Layer     | Technology                     |
+| --------- | ------------------------------ |
+| Backend   | PHP (Custom API + Web Router)  |
+| Database  | MySQL (Railway)                |
+| Hosting   | Render                         |
+| Auth      | Google OAuth / Admin Login     |
+| Frontend  | Tailwind CSS + Font Awesome    |
 
 ---
 
 ## 🔐 Authentication Flow
 
+### Mobile (Google)
 1. Android app gets Google ID Token
 2. Send token to API
 3. API verifies with Google
 4. User created / logged in
 5. Token returned
+
+### Admin Panel
+1. Navigate to `/pages/admin_login.php`
+2. Enter email & password
+3. Session created with strict security (HttpOnly, Secure, SameSite)
+4. Role verified – only `admin` role can access
 
 ---
 
@@ -50,10 +71,9 @@ https://shikhbo-api.onrender.com/api/
 
 ### 🔑 Google Login
 
-**POST** `/google_login.php`
+**POST** `/api/google_login.php`
 
 #### Request Body
-
 ```json
 {
   "google_token": "GOOGLE_ID_TOKEN",
@@ -124,12 +144,31 @@ Run:
 ## 📁 Project Structure
 
 ```
-/api
- ├── config.php
- ├── connection.php
- ├── google_login.php
- ├── setup_database.php
- └── uploads/
+/
+├── index.php                  # Main admin router (requires auth)
+├── pages/
+│   ├── admin_login.php        # Admin login page
+│   ├── dashboard.php          # Dashboard (dynamic stats)
+│   ├── students.php           # Students management
+│   ├── exams.php              # Exams management
+│   ├── questions.php          # Question bank
+│   ├── results.php            # Exam results
+│   ├── admins.php             # Admin management
+│   ├── settings.php           # Admin settings
+│   └── logout.php             # Destroy session
+├── includes/
+│   ├── auth.php               # Authentication & role checks
+│   └── security.php           # CSRF, rate limiting, headers
+├── css/
+│   └── custom.css             # Custom styles
+├── js/
+│   └── custom.js              # Sidebar, dropdowns, timer
+└── api/
+    ├── config.php
+    ├── connection.php
+    ├── google_login.php
+    ├── setup_database.php
+    └── uploads/
 ```
 
 ---
