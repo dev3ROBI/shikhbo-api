@@ -402,6 +402,54 @@ function showConfirmModal(msg, cb){
     modal.querySelector('.confirm-btn').addEventListener('click', ()=>{ modal.remove(); cb(); });
 }
 
+function showResultModal(result){
+    const isPassed = result.exam_status === 'PASSED';
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+    modal.innerHTML = `
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-gradient-to-r ${isPassed ? 'from-green-500 to-emerald-600' : 'from-orange-500 to-red-500'} p-6 text-center">
+            <div class="w-20 h-20 mx-auto bg-white/20 rounded-full flex items-center justify-center mb-3">
+                <i class="fa-solid ${isPassed ? 'fa-trophy' : 'fa-face-frown'} text-4xl text-white"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white">${isPassed ? 'Congratulations!' : 'Keep Trying!'}</h2>
+            <p class="text-white/80 text-sm mt-1">Exam Completed</p>
+        </div>
+        <div class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 text-center">
+                    <p class="text-2xl font-bold text-shikhbo-primary dark:text-indigo-400">${result.score}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Score</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 text-center">
+                    <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">${result.total_marks}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Total Marks</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 text-center">
+                    <p class="text-2xl font-bold ${result.percentage >= result.passing_percentage ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${result.percentage}%</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Percentage</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 text-center">
+                    <p class="text-2xl font-bold ${isPassed ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}">${result.percentage >= result.passing_percentage ? 'PASSED' : 'FAILED'}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Status</p>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <a href="index.php?page=exam_attempt" class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-center font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                    <i class="fa-solid fa-arrow-rotate-right mr-2"></i>Try Again
+                </a>
+                <a href="index.php?page=results" class="flex-1 px-4 py-3 bg-shikhbo-primary text-white rounded-xl text-center font-medium hover:bg-indigo-700 dark:hover:bg-indigo-600 transition">
+                    <i class="fa-solid fa-chart-bar mr-2"></i>View Results
+                </a>
+            </div>
+        </div>
+    </div>`;
+    document.body.appendChild(modal);
+}
+
 async function submitExam(){
     const answerArray = questionsData.map(q=>({question_id: q.id, selected_option: answers[q.id]||''}));
     try {
@@ -409,9 +457,8 @@ async function submitExam(){
         const result = await res.json();
         if(result.status==='success'){
             localStorage.removeItem(STORAGE_KEY);
-            alert(`✅ Exam submitted!\nScore: ${result.score}/${result.total_marks} (${result.percentage}%)\nStatus: ${result.exam_status}`);
-            window.location.href='index.php?page=results';
-        } else { alert('Submission error: '+(result.message||'Unknown')); }
+            showResultModal(result);
+        } else { showToast('Submission error: '+(result.message||'Unknown'), 'error'); }
     } catch(e) { alert('Network error.'); }
 }
 
