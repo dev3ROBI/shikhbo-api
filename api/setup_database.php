@@ -148,29 +148,75 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 ");
 
 // =======================
-// subjects
+// NEW: EXAM CATEGORIES (Multi-Level)
 // =======================
 $server->query("
-CREATE TABLE IF NOT EXISTS subjects (
+CREATE TABLE IF NOT EXISTS exam_categories (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    parent_id INT UNSIGNED DEFAULT NULL,
+    level TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    category_type ENUM('academic','job','general','other') DEFAULT 'academic',
+    icon VARCHAR(64) DEFAULT NULL,
+    description TEXT DEFAULT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    sort_order INT DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES exam_categories(id) ON DELETE CASCADE,
+    INDEX idx_parent (parent_id),
+    INDEX idx_slug (slug),
+    INDEX idx_type (category_type),
+    INDEX idx_level (level)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 ");
 
 // =======================
-// exams
+// SEED DEFAULT ROOT CATEGORIES
+// =======================
+$rootCheck = $server->query("SELECT id FROM exam_categories WHERE parent_id IS NULL LIMIT 1");
+if ($rootCheck->num_rows === 0) {
+    $server->query("
+        INSERT INTO exam_categories (name, slug, parent_id, level, category_type, icon) VALUES
+        ('Academic', 'academic', NULL, 1, 'academic', 'fa-graduation-cap'),
+        ('Job', 'job', NULL, 1, 'job', 'fa-briefcase'),
+        ('General', 'general', NULL, 1, 'general', 'fa-book')
+    ");
+}
+
+// =======================
+// MIGRATE EXAMS TABLE (add category_id)
+// =======================
+$checkExamCol = $server->query("SHOW COLUMNS FROM exams LIKE 'category_id'");
+if ($checkExamCol->num_rows == 0) {
+    // Add category_id and adjust
+    $server->query("ALTER TABLE exams 
+        ADD COLUMN category_id INT UNSIGNED NULL AFTER subject_id,
+        ADD COLUMN description TEXT NULL AFTER title,
+        ADD COLUMN is_free TINYINT(1) DEFAULT 1 AFTER passing_percentage,
+        ADD COLUMN price DECIMAL(10,2) DEFAULT 0.00 AFTER is_free
+    ");
+    // Add foreign key if possible (skip if table has data incompatible)
+    // We'll do a soft addition, actual relation can be applied later
+}
+
+// =======================
+// EXAMS TABLE (if not exists)
 // =======================
 $server->query("
 CREATE TABLE IF NOT EXISTS exams (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     subject_id INT UNSIGNED NULL,
+    category_id INT UNSIGNED NULL,
+    description TEXT NULL,
     exam_date DATETIME NULL,
     duration_minutes INT DEFAULT 60,
     total_marks INT DEFAULT 100,
     passing_percentage DECIMAL(5,2) DEFAULT 40.00,
+    is_free TINYINT(1) DEFAULT 1,
+    price DECIMAL(10,2) DEFAULT 0.00,
     status ENUM('draft','active','completed') DEFAULT 'draft',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -179,7 +225,7 @@ CREATE TABLE IF NOT EXISTS exams (
 ");
 
 // =======================
-// questions
+// QUESTIONS TABLE
 // =======================
 $server->query("
 CREATE TABLE IF NOT EXISTS questions (
@@ -200,7 +246,7 @@ CREATE TABLE IF NOT EXISTS questions (
 ");
 
 // =======================
-// exam_results
+// EXAM RESULTS TABLE
 // =======================
 $server->query("
 CREATE TABLE IF NOT EXISTS exam_results (
@@ -220,16 +266,26 @@ CREATE TABLE IF NOT EXISTS exam_results (
 ");
 
 // =======================
-// DEFAULT ADMIN CREATION (only if no admin exists)
+// SUBJECTS TABLE (if not exists)
+// =======================
+$server->query("
+CREATE TABLE IF NOT EXISTS subjects (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+");
+
+// =======================
+// DEFAULT ADMIN CREATION
 // =======================
 $adminCheck = $server->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
 if ($adminCheck->num_rows == 0) {
-    // No admin yet → create default
     $name = 'Super Admin';
     $email = 'admin@shikhbo.com';
     $password = password_hash('Admin@123#Secure', PASSWORD_BCRYPT, ['cost' => 12]);
     $referral = 'ADMIN' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
-
     $stmt = $server->prepare("INSERT INTO users (name, email, password, role, status, referral_code) VALUES (?, ?, ?, 'admin', 'active', ?)");
     $stmt->bind_param('ssss', $name, $email, $password, $referral);
     $stmt->execute();
@@ -241,8 +297,8 @@ if ($adminCheck->num_rows == 0) {
 // =======================
 echo json_encode([
     'status' => 'success',
-    'message' => 'Database fully synced & ready 🚀 (Admin panel tables included)',
+    'message' => 'Database fully synced & ready 🚀 (Multi-level categories included)',
     'database' => DB_NAME,
-    'default_admin' => 'admin@shikhbo.com / Admin@123#Secure (change immediately)'
+    'default_admin' => 'admin@shikhbo.com / Admin@123#Secure (change immediately)',
+    'tables_created' => ['users','user_tokens','user_images','referral_logs','referral_rewards','login_attempts','subjects','exam_categories','exams','questions','exam_results']
 ], JSON_PRETTY_PRINT);
-?>
