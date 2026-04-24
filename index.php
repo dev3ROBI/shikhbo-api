@@ -25,11 +25,11 @@ if ($ticketsTableExists) {
 
 // Page routing
 $page = $_GET['page'] ?? 'dashboard';
-$allowedPages = ['dashboard','students','admins','settings','exams','questions','results','categories','database','exam_attempt'];
+$allowedPages = ['dashboard','students','admins','settings','exams','questions','results','categories','database','exam_attempt','app_control'];
 if (!in_array($page, $allowedPages)) $page = 'dashboard';
 $pageFile = __DIR__ . '/pages/' . $page . '.php';
 if (!file_exists($pageFile)) { $page = 'dashboard'; $pageFile = __DIR__ . '/pages/dashboard.php'; }
-$pageTitles = ['dashboard'=>'Admin Dashboard','students'=>'Students Management','admins'=>'Admin Management','settings'=>'System Settings','exams'=>'Exams Management','questions'=>'Question Bank','results'=>'Exam Results','categories'=>'Exam Categories','database'=>'Database Console','exam_attempt'=>'Exam Attempt'];
+$pageTitles = ['dashboard'=>'Admin Dashboard','students'=>'Students Management','admins'=>'Admin Management','settings'=>'System Settings','exams'=>'Exams Management','questions'=>'Question Bank','results'=>'Exam Results','categories'=>'Exam Categories','database'=>'Database Console','exam_attempt'=>'Exam Attempt','app_control'=>'App Control'];
 $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
 
 $navItems = [
@@ -41,6 +41,7 @@ $navItems = [
     ['students',     'fa-users',         'Students'],
     ['results',      'fa-chart-bar',     'Results'],
     ['admins',       'fa-user-gear',     'Admins'],
+    ['app_control',  'fa-mobile-screen', 'App Control'],
     ['database',     'fa-terminal',      'Database'],
     ['settings',     'fa-cog',           'Settings'],
 ];

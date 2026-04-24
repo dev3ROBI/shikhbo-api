@@ -148,6 +148,17 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 ");
 
 // =======================
+// APP SETTINGS TABLE
+// =======================
+$server->query("
+CREATE TABLE IF NOT EXISTS app_settings (
+    setting_key VARCHAR(100) PRIMARY KEY,
+    setting_value TEXT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+");
+
+// =======================
 // NEW: EXAM CATEGORIES (Multi-Level)
 // =======================
 $server->query("
@@ -300,5 +311,5 @@ echo json_encode([
     'message' => 'Database fully synced & ready 🚀 (Multi-level categories included)',
     'database' => DB_NAME,
     'default_admin' => 'admin@shikhbo.com / Admin@123#Secure (change immediately)',
-    'tables_created' => ['users','user_tokens','user_images','referral_logs','referral_rewards','login_attempts','subjects','exam_categories','exams','questions','exam_results']
+    'tables_created' => ['users','user_tokens','user_images','referral_logs','referral_rewards','login_attempts','app_settings','subjects','exam_categories','exams','questions','exam_results']
 ], JSON_PRETTY_PRINT);

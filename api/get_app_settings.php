@@ -17,27 +17,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
-$conn->query("
-    CREATE TABLE IF NOT EXISTS app_settings (
-        setting_key VARCHAR(100) PRIMARY KEY,
-        setting_value TEXT NULL,
-        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-");
-
 $defaults = [
     'app_notice' => 'Welcome to Shikhbo. Keep learning every day.',
     'support_email' => 'support@shikhbo.com',
+    'highlight_course' => 'English for Beginners',
     'maintenance_mode' => 'off',
     'maintenance_title' => 'We are improving Shikhbo',
     'maintenance_message' => 'The app is temporarily unavailable while we apply updates. Please check back shortly.',
     'maintenance_eta' => 'Back very soon',
-    'maintenance_end_at' => '',
     'maintenance_break_time' => '15-20 minutes',
     'maintenance_details' => 'Server upgrade, bug fixes, better performance and smoother sync.',
     'maintenance_status_note' => 'Live maintenance in progress',
     'latest_version' => '1.0.0',
-    'highlight_course' => 'English for Beginners'
+    'force_update' => '0',
+    'update_url' => ''
 ];
 
 $result = $conn->query("SELECT setting_key, setting_value FROM app_settings");
