@@ -9,42 +9,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'] ?? '';
 
         if ($action === 'add_category') {
-            $name = sanitize($_POST['name']);
+            $name     = sanitize($_POST['name']);
             $parentId = $_POST['parent_id'] ? intval($_POST['parent_id']) : null;
-            $type = sanitize($_POST['category_type'] ?? 'academic');
-            $level = $parentId ? ($mysqli->query("SELECT level FROM exam_categories WHERE id=$parentId")->fetch_assoc()['level'] + 1) : 1;
-            $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $name)) . '-' . substr(uniqid(), -4);
+            $type     = sanitize($_POST['category_type'] ?? 'academic');
+            $level    = $parentId ? ($mysqli->query("SELECT level FROM exam_categories WHERE id = $parentId")->fetch_assoc()['level'] + 1) : 1;
+            $slug     = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $name)) . '-' . substr(uniqid(), -4);
 
-            // ✅ CORRECT BIND TYPES: string, string, integer, integer, string
-            $stmt = $mysqli->prepare("INSERT INTO exam_categories (name, slug, parent_id, level, category_type) VALUES (?,?,?,?,?)");
+            // INSERT: name (s), slug (s), parent_id (i), level (i), category_type (s)
+            $stmt = $mysqli->prepare("INSERT INTO exam_categories (name, slug, parent_id, level, category_type) VALUES (?, ?, ?, ?, ?)");
             $stmt->bind_param('ssiis', $name, $slug, $parentId, $level, $type);
             $stmt->execute() ? $success = "Category added." : $error = $stmt->error;
             $stmt->close();
 
         } elseif ($action === 'edit_category') {
-            $catId = intval($_POST['category_id']);
-            $name = sanitize($_POST['name']);
+            $catId    = intval($_POST['category_id']);
+            $name     = sanitize($_POST['name']);
             $parentId = $_POST['parent_id'] ? intval($_POST['parent_id']) : null;
-            $type = sanitize($_POST['category_type'] ?? 'academic');
-            $active = intval($_POST['is_active'] ?? 1);
-            $level = $parentId ? ($mysqli->query("SELECT level FROM exam_categories WHERE id=$parentId")->fetch_assoc()['level'] + 1) : 1;
+            $type     = sanitize($_POST['category_type'] ?? 'academic');
+            $active   = intval($_POST['is_active'] ?? 1);
+            $level    = $parentId ? ($mysqli->query("SELECT level FROM exam_categories WHERE id = $parentId")->fetch_assoc()['level'] + 1) : 1;
 
-            // ✅ CORRECT BIND TYPES: string, integer, integer, string, integer, integer
-            $stmt = $mysqli->prepare("UPDATE exam_categories SET name=?, parent_id=?, level=?, category_type=?, is_active=? WHERE id=?");
-            $stmt->bind_param('siiisi', $name, $parentId, $level, $type, $active, $catId);
+            // UPDATE: name (s), parent_id (i), level (i), category_type (s), is_active (i), id (i)
+            $stmt = $mysqli->prepare("UPDATE exam_categories SET name = ?, parent_id = ?, level = ?, category_type = ?, is_active = ? WHERE id = ?");
+            $stmt->bind_param('siisii', $name, $parentId, $level, $type, $active, $catId);
             $stmt->execute() ? $success = "Category updated." : $error = $stmt->error;
             $stmt->close();
 
         } elseif ($action === 'delete_category') {
             $catId = intval($_POST['category_id']);
-            $parent = $mysqli->query("SELECT parent_id FROM exam_categories WHERE id=$catId")->fetch_assoc();
+            $parent = $mysqli->query("SELECT parent_id FROM exam_categories WHERE id = $catId")->fetch_assoc();
             $newParent = $parent['parent_id'] ?? null;
             if ($newParent) {
-                $mysqli->query("UPDATE exam_categories SET parent_id=$newParent WHERE parent_id=$catId");
+                $mysqli->query("UPDATE exam_categories SET parent_id = $newParent WHERE parent_id = $catId");
             } else {
-                $mysqli->query("UPDATE exam_categories SET parent_id=NULL WHERE parent_id=$catId");
+                $mysqli->query("UPDATE exam_categories SET parent_id = NULL WHERE parent_id = $catId");
             }
-            $stmt = $mysqli->prepare("DELETE FROM exam_categories WHERE id=?");
+            $stmt = $mysqli->prepare("DELETE FROM exam_categories WHERE id = ?");
             $stmt->bind_param('i', $catId);
             $stmt->execute() ? $success = "Category deleted. Children reassigned." : $error = $stmt->error;
             $stmt->close();
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch all categories and build tree (unchanged)
+// Fetch all categories and build tree
 $allCats = $mysqli->query("SELECT * FROM exam_categories ORDER BY parent_id, sort_order, id");
 $catsById = [];
 while ($c = $allCats->fetch_assoc()) { $catsById[$c['id']] = $c; }
@@ -75,7 +75,7 @@ function renderTreeRows($tree, $level = 0) {
         $indent = str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $level);
         $icon = $cat['icon'] ?? 'fa-folder';
         $hasChildren = !empty($cat['children']);
-        $typeColors = ['academic'=>'blue','job'=>'green','general'=>'purple','other'=>'gray'];
+        $typeColors = ['academic' => 'blue', 'job' => 'green', 'general' => 'purple', 'other' => 'gray'];
         $tc = $typeColors[$cat['category_type']] ?? 'gray';
         $html .= "<tr class='hover:bg-gray-50 border-b border-gray-100'>
             <td class='px-4 py-3 text-sm'>
@@ -154,7 +154,7 @@ function renderTreeRows($tree, $level = 0) {
                     <?php
                     $parents = $mysqli->query("SELECT id, name, level FROM exam_categories ORDER BY level, id");
                     while ($p = $parents->fetch_assoc()):
-                        $ind = str_repeat('— ', max(0, $p['level']-1));
+                        $ind = str_repeat('— ', max(0, $p['level'] - 1));
                     ?>
                         <option value="<?php echo $p['id']; ?>"><?php echo $ind . sanitizeOutput($p['name']); ?></option>
                     <?php endwhile; ?>
