@@ -13,8 +13,7 @@ $admin = getCurrentAdmin();
 
 // Determine which page to load
 $page = $_GET['page'] ?? 'dashboard';
-$allowedPages = ['dashboard', 'students', 'admins', 'settings', 'exams', 'questions', 'results', 'categories', 'database'];
-
+$allowedPages = ['dashboard', 'students', 'admins', 'settings', 'exams', 'questions', 'results', 'categories', 'database', 'exam_attempt'];
 if (!in_array($page, $allowedPages)) {
     $page = 'dashboard';
 }
@@ -35,7 +34,8 @@ $pageTitles = [
     'questions' => 'Question Bank',
     'results' => 'Exam Results',
     'categories' => 'Exam Categories',
-    'database' => 'Database Console'
+    'database' => 'Database Console',
+    'exam_attempt' => 'Exam Attempt'
 ];
 $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
 ?>
@@ -101,6 +101,14 @@ $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
                             Dashboard
                         </a>
                     </li>
+                                       <li>
+                        <a href="index.php?page=students"
+                            class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                           <?php echo $page === 'students' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
+                            <i class="fa-solid fa-users w-5 h-5 mr-3"></i>
+                            Students
+                        </a>
+                    </li>
                     <li>
                         <a href="index.php?page=categories"
                             class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
@@ -126,11 +134,11 @@ $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
                         </a>
                     </li>
                     <li>
-                        <a href="index.php?page=students"
+                        <a href="index.php?page=exam_attempt"
                             class="nav-link flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
-                           <?php echo $page === 'students' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
-                            <i class="fa-solid fa-users w-5 h-5 mr-3"></i>
-                            Students
+                           <?php echo $page === 'exam_attempt' ? 'bg-shikhbo-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 hover:text-shikhbo-primary'; ?>">
+                            <i class="fa-solid fa-pencil w-5 h-5 mr-3"></i>
+                            Exam Attempt
                         </a>
                     </li>
                     <li>
