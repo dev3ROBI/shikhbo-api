@@ -3,16 +3,16 @@
    ======================================================== */
 
 /* ---------- Sidebar Transition ---------- */
-.sidebar { transition: transform 0.3s ease-in-out; }
+.sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .sidebar.open { transform: translateX(0); }
 
 /* ---------- Smooth Card Hover ---------- */
 .hover\:shadow-lg:hover { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
 
 /* ---------- Custom Scrollbar ---------- */
-::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 * { scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f5f9; }
 
@@ -21,6 +21,21 @@ tr:hover { background-color: #f8fafc; }
 
 /* ---------- Active Navigation ---------- */
 .nav-active { background-color: #4F46E5; color: white; }
+.nav-link { position: relative; }
+.nav-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%) scale(0);
+    width: 3px;
+    height: 20px;
+    background: #4F46E5;
+    border-radius: 0 4px 4px 0;
+    transition: transform 0.2s ease;
+}
+.nav-link:hover::before { transform: translateY(-50%) scale(1); }
+.nav-link.bg-shikhbo-primary::before { display: none; }
 
 /* ---------- Dropdown Animation ---------- */
 .dropdown-enter { opacity: 0; transform: scale(0.95) translateY(-10px); }
@@ -30,15 +45,33 @@ tr:hover { background-color: #f8fafc; }
 @media (max-width: 1024px) { .sidebar-open { overflow: hidden; } }
 
 /* ---------- Focus Rings ---------- */
-input:focus, select:focus, textarea:focus { outline: none; ring: 2px solid #4F46E5; }
+input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); border-color: #4F46E5; }
 
 /* ---------- Loading Spinner ---------- */
 @keyframes spin { to { transform: rotate(360deg); } }
 .fa-spin, .animate-spin { animation: spin 1s linear infinite; }
 
 /* ---------- Toast Notifications ---------- */
-.toast { position: fixed; bottom: 1rem; right: 1rem; padding: 1rem 1.5rem; border-radius: 0.5rem; color: white; font-weight: 500; z-index: 100; animation: slideIn 0.3s ease-out; }
-@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    animation: slideInRight 0.3s ease-out;
+    max-width: 380px;
+}
+.toast-success { background: #059669; }
+.toast-error { background: #dc2626; }
+.toast-warning { background: #d97706; }
+.toast-info { background: #4F46E5; }
+.toast-exit { animation: slideOutRight 0.3s ease-in forwards; }
+@keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
 
 /* ---------- Category Tree ---------- */
 .category-card { transition: all 0.2s ease; }
@@ -46,7 +79,7 @@ input:focus, select:focus, textarea:focus { outline: none; ring: 2px solid #4F46
 .subcategory-header .subchevron { transition: transform 0.3s ease; }
 
 /* ---------- Question Card Highlight ---------- */
-.question-card { transition: border-color 0.2s ease; }
+.question-card { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
 .question-card:has(input:checked) { border-color: #4F46E5; background: #f5f3ff; }
 
 /* ---------- Custom Radio Styling ---------- */
@@ -59,3 +92,35 @@ input[type="radio"] { accent-color: #4F46E5; }
 /* ---------- Smooth Modal Transitions ---------- */
 .modal-enter { opacity: 0; transform: scale(0.95); transition: all 0.2s ease-out; }
 .modal-enter-active { opacity: 1; transform: scale(1); }
+
+/* ---------- Sticky Category Sidebar ---------- */
+@media (min-width: 1024px) {
+    .sticky-filter { position: sticky; top: 1rem; }
+}
+
+/* ---------- Skeleton Loading ---------- */
+@keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200px 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+/* ---------- Profile Dropdown ---------- */
+#profileButton:hover #dropdownChevron { transform: rotate(180deg); }
+
+/* ---------- Sidebar Nav Active Indicator ---------- */
+.nav-link.bg-shikhbo-primary {
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+
+/* ---------- Progress Bar Animation ---------- */
+#progressBar { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* ---------- Category Tree Nodes ---------- */
+.tree-node .chevron { transition: transform 0.2s ease; }
+.tree-node > div:first-child:hover { background: #f9fafb; }
+
+/* ---------- Page Transition ---------- */
+#mainContent { transition: opacity 0.15s ease; }
