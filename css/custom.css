@@ -3,94 +3,59 @@
    ======================================================== */
 
 /* ---------- Sidebar Transition ---------- */
-.sidebar {
-    transition: transform 0.3s ease-in-out;
-}
-.sidebar.open {
-    transform: translateX(0);
-}
+.sidebar { transition: transform 0.3s ease-in-out; }
+.sidebar.open { transform: translateX(0); }
 
 /* ---------- Smooth Card Hover ---------- */
-.hover\:shadow-lg:hover {
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
+.hover\:shadow-lg:hover { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
 
 /* ---------- Custom Scrollbar ---------- */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-::-webkit-scrollbar-track {
-    background: #f1f5f9;
-}
-::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-}
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f1f5f9;
-}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+* { scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f5f9; }
 
 /* ---------- Table Enhancements ---------- */
-tr:hover {
-    background-color: #f8fafc;
-}
+tr:hover { background-color: #f8fafc; }
 
 /* ---------- Active Navigation ---------- */
-.nav-active {
-    background-color: #4F46E5;
-    color: white;
-}
+.nav-active { background-color: #4F46E5; color: white; }
 
 /* ---------- Dropdown Animation ---------- */
-.dropdown-enter {
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-}
-.dropdown-enter-active {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    transition: all 0.2s ease-out;
-}
+.dropdown-enter { opacity: 0; transform: scale(0.95) translateY(-10px); }
+.dropdown-enter-active { opacity: 1; transform: scale(1) translateY(0); transition: all 0.2s ease-out; }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 1024px) {
-    .sidebar-open {
-        overflow: hidden;
-    }
-}
+@media (max-width: 1024px) { .sidebar-open { overflow: hidden; } }
 
 /* ---------- Focus Rings ---------- */
-input:focus, select:focus, textarea:focus {
-    outline: none;
-    ring: 2px solid #4F46E5;
-}
+input:focus, select:focus, textarea:focus { outline: none; ring: 2px solid #4F46E5; }
 
 /* ---------- Loading Spinner ---------- */
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-.fa-spin {
-    animation: spin 1s linear infinite;
-}
+@keyframes spin { to { transform: rotate(360deg); } }
+.fa-spin, .animate-spin { animation: spin 1s linear infinite; }
 
 /* ---------- Toast Notifications ---------- */
-.toast {
-    position: fixed;
-    bottom: 1rem;
-    right: 1rem;
-    padding: 1rem 1.5rem;
-    border-radius: 0.5rem;
-    color: white;
-    font-weight: 500;
-    z-index: 100;
-    animation: slideIn 0.3s ease-out;
-}
-@keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
+.toast { position: fixed; bottom: 1rem; right: 1rem; padding: 1rem 1.5rem; border-radius: 0.5rem; color: white; font-weight: 500; z-index: 100; animation: slideIn 0.3s ease-out; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ---------- Category Tree ---------- */
+.category-card { transition: all 0.2s ease; }
+.category-card:hover { border-color: #4F46E5; }
+.subcategory-header .subchevron { transition: transform 0.3s ease; }
+
+/* ---------- Question Card Highlight ---------- */
+.question-card { transition: border-color 0.2s ease; }
+.question-card:has(input:checked) { border-color: #4F46E5; background: #f5f3ff; }
+
+/* ---------- Custom Radio Styling ---------- */
+input[type="radio"] { accent-color: #4F46E5; }
+
+/* ---------- Pulse Animation for Timer ---------- */
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.text-red-500.animate-pulse { animation: pulse 1s infinite; }
+
+/* ---------- Smooth Modal Transitions ---------- */
+.modal-enter { opacity: 0; transform: scale(0.95); transition: all 0.2s ease-out; }
+.modal-enter-active { opacity: 1; transform: scale(1); }
