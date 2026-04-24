@@ -52,14 +52,27 @@ $navItems = [
     ['settings',     'fa-cog',           'Settings'],
 ];
 ?><!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo sanitizeOutput($pageTitle); ?> — Shikhbo</title>
     <meta name="robots" content="noindex, nofollow">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config={theme:{extend:{colors:{'shikhbo-primary':'#4F46E5','shikhbo-dark':'#1E293B','shikhbo-light':'#F8FAFC'}}}}</script>
+    <script>
+    tailwind.config = {
+        darkMode: 'class',   
+        theme: {
+            extend: {
+                colors: {
+                    'shikhbo-primary': '#4F46E5',
+                    'shikhbo-dark': '#1E293B',
+                    'shikhbo-light': '#F8FAFC',
+                }
+            }
+        }
+    }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/css/custom.css">
 </head>
@@ -96,6 +109,11 @@ $navItems = [
             <?php endforeach; ?>
         </ul>
     </nav>
+    <!-- Theme Toggle -->
+    <button id="themeToggle" class="relative p-2 text-gray-500 hover:text-shikhbo-primary rounded-full hover:bg-gray-100 transition-colors" title="Toggle dark mode">
+        <i id="themeIcon" class="fa-solid fa-moon text-lg"></i>
+        <!-- default light mode shows moon (switch to dark) -->
+    </button>
     <div class="p-4 border-t border-gray-200">
         <div class="flex items-center space-x-3">
             <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin['name']); ?>&background=4F46E5&color=fff&size=36" alt="" class="w-9 h-9 rounded-full flex-shrink-0">
@@ -208,7 +226,45 @@ $navItems = [
         </form>
     </div>
 </div>
+<script>
+    // Theme Manager
+    (function () {
+        const html = document.documentElement;
+        const toggleBtn = document.getElementById('themeToggle');
+        const icon = document.getElementById('themeIcon');
 
+        // LocalStorage থেকে থিম পড়ুন
+        const savedTheme = localStorage.getItem('shikhbo-theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html
+                .classList
+                .add('dark');
+            icon
+                .classList
+                .replace('fa-moon', 'fa-sun');
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            if (html.classList.contains('dark')) {
+                html
+                    .classList
+                    .remove('dark');
+                localStorage.setItem('shikhbo-theme', 'light');
+                icon
+                    .classList
+                    .replace('fa-sun', 'fa-moon');
+            } else {
+                html
+                    .classList
+                    .add('dark');
+                localStorage.setItem('shikhbo-theme', 'dark');
+                icon
+                    .classList
+                    .replace('fa-moon', 'fa-sun');
+            }
+        });
+    })();
+</script>
 <script src="/js/custom.js"></script>
 </body>
 </html>
