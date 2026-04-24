@@ -14,10 +14,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $type = sanitize($_POST['category_type'] ?? 'academic');
             $level = $parentId ? ($mysqli->query("SELECT level FROM exam_categories WHERE id=$parentId")->fetch_assoc()['level'] + 1) : 1;
             $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $name)) . '-' . substr(uniqid(), -4);
+
+            // ✅ CORRECT BIND TYPES: string, string, integer, integer, string
             $stmt = $mysqli->prepare("INSERT INTO exam_categories (name, slug, parent_id, level, category_type) VALUES (?,?,?,?,?)");
-            $stmt->bind_param('ssiii', $name, $slug, $parentId, $level, $type);
+            $stmt->bind_param('ssiis', $name, $slug, $parentId, $level, $type);
             $stmt->execute() ? $success = "Category added." : $error = $stmt->error;
             $stmt->close();
+
         } elseif ($action === 'edit_category') {
             $catId = intval($_POST['category_id']);
             $name = sanitize($_POST['name']);
@@ -25,13 +28,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $type = sanitize($_POST['category_type'] ?? 'academic');
             $active = intval($_POST['is_active'] ?? 1);
             $level = $parentId ? ($mysqli->query("SELECT level FROM exam_categories WHERE id=$parentId")->fetch_assoc()['level'] + 1) : 1;
+
+            // ✅ CORRECT BIND TYPES: string, integer, integer, string, integer, integer
             $stmt = $mysqli->prepare("UPDATE exam_categories SET name=?, parent_id=?, level=?, category_type=?, is_active=? WHERE id=?");
-            $stmt->bind_param('siiiii', $name, $parentId, $level, $type, $active, $catId);
+            $stmt->bind_param('siiisi', $name, $parentId, $level, $type, $active, $catId);
             $stmt->execute() ? $success = "Category updated." : $error = $stmt->error;
             $stmt->close();
+
         } elseif ($action === 'delete_category') {
             $catId = intval($_POST['category_id']);
-            // First move children to this category's parent
             $parent = $mysqli->query("SELECT parent_id FROM exam_categories WHERE id=$catId")->fetch_assoc();
             $newParent = $parent['parent_id'] ?? null;
             if ($newParent) {
@@ -47,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch all categories and build tree
+// Fetch all categories and build tree (unchanged)
 $allCats = $mysqli->query("SELECT * FROM exam_categories ORDER BY parent_id, sort_order, id");
 $catsById = [];
 while ($c = $allCats->fetch_assoc()) { $catsById[$c['id']] = $c; }
