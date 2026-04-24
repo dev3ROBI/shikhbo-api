@@ -143,21 +143,44 @@ function buildCategoryPaths($catsById) {
 }
 $categoryPaths = buildCategoryPaths($catsById);
 
-// ========== UPDATED CATEGORY SELECT OPTIONS WITH FULL PATH ==========
-function catSelectOptions($tree, $paths, $parent=null, $level=0) {
-    $h = '';
-    foreach ($tree as $id => $cat) {
-        if ($cat['parent_id'] == $parent) {
-            $display = isset($paths[$id]) ? $paths[$id] : sanitizeOutput($cat['name']);
-            $h .= "<option value='{$id}'>" . sanitizeOutput($display) . "</option>";
-            if (!empty($cat['children'])) {
-                $h .= catSelectOptions($cat['children'], $paths, $id, $level+1);
+// ========== RELIABLE CATEGORY DROPDOWN (ALL CATEGORIES SHOWN) ==========
+function getAllCategoryOptions($catsById, $paths) {
+    $visited = [];
+    $options = '';
+
+    $addChildren = function($parentId) use ($catsById, $paths, &$addChildren, &$visited) {
+        $html = '';
+        foreach ($catsById as $id => $cat) {
+            if ($cat['parent_id'] == $parentId) {
+                $visited[$id] = true;
+                $display = isset($paths[$id]) ? sanitizeOutput($paths[$id]) : sanitizeOutput($cat['name']);
+                $html .= "<option value='{$id}'>" . $display . "</option>";
+                $html .= $addChildren($id);
             }
         }
+        return $html;
+    };
+
+    // Start with root categories (parent_id = NULL)
+    $options = $addChildren(null);
+
+    // Add any orphan categories (parent not found) as root with note
+    foreach ($catsById as $id => $cat) {
+        if (!isset($visited[$id])) {
+            $display = isset($paths[$id]) ? sanitizeOutput($paths[$id]) : sanitizeOutput($cat['name']);
+            if ($cat['parent_id'] !== null) {
+                $display = '⚠️ Orphan: ' . $display;
+            }
+            $options .= "<option value='{$id}'>" . $display . "</option>";
+            // Also add children of orphan (if any)
+            $options .= $addChildren($id);
+        }
     }
-    return $h;
+
+    return $options;
 }
-$catSelectHTML = catSelectOptions($catTree, $categoryPaths);
+$catSelectHTML = getAllCategoryOptions($catsById, $categoryPaths);
+
 ?>
 
 <?php if (isset($error)): ?><div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm"><?php echo sanitizeOutput($error); ?></div><?php endif; ?>
