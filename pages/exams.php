@@ -1,6 +1,13 @@
 <?php
 $mysqli = getDBConnection();
-$exams = $mysqli->query("SELECT id, title, subject, exam_date, duration_minutes, total_marks, status FROM exams ORDER BY exam_date DESC");
+
+// Corrected query: JOIN with subjects table to get subject name
+$exams = $mysqli->query("
+    SELECT e.id, e.title, s.name AS subject, e.exam_date, e.duration_minutes, e.total_marks, e.status
+    FROM exams e
+    LEFT JOIN subjects s ON e.subject_id = s.id
+    ORDER BY e.exam_date DESC
+");
 ?>
 
 <div class="flex items-center justify-between mb-6">
@@ -30,11 +37,21 @@ $exams = $mysqli->query("SELECT id, title, subject, exam_date, duration_minutes,
             <?php if ($exams && $exams->num_rows > 0): ?>
                 <?php while ($exam = $exams->fetch_assoc()): ?>
                     <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800"><?php echo sanitizeOutput($exam['title']); ?></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600"><?php echo sanitizeOutput($exam['subject']); ?></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600"><?php echo date('d M, Y', strtotime($exam['exam_date'])); ?></td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600"><?php echo $exam['duration_minutes']; ?> min</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600"><?php echo $exam['total_marks']; ?></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                            <?php echo sanitizeOutput($exam['title']); ?>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <?php echo sanitizeOutput($exam['subject'] ?? '—'); ?>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <?php echo $exam['exam_date'] ? date('d M, Y', strtotime($exam['exam_date'])) : '—'; ?>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <?php echo $exam['duration_minutes']; ?> min
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <?php echo $exam['total_marks']; ?>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 py-1 text-xs font-semibold rounded-full
                                 <?php echo $exam['status'] === 'active' ? 'text-green-800 bg-green-100' : 
