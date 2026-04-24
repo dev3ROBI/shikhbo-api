@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $passing = floatval($_POST['passing_percentage']);
             $status = $_POST['status'];
             $desc = sanitize($_POST['description'] ?? '');
-            $date = $_POST['exam_date'] ?? null;
+            $date = !empty($_POST['exam_date']) ? $_POST['exam_date'] : null;
             if ($action === 'add_exam') {
                 $stmt = $mysqli->prepare("INSERT INTO exams (title,category_id,description,exam_date,duration_minutes,total_marks,passing_percentage,status) VALUES (?,?,?,?,?,?,?,?)");
                 $stmt->bind_param('sisiddds', $title, $catId, $desc, $date, $duration, $marks, $passing, $status);
