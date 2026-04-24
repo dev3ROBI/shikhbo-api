@@ -171,8 +171,8 @@ $navItems = [
         </div>
     </div>
 
-    <!-- Logout Modal -->
-    <div id="logoutModal" class="fixed inset-0 z-50 hidden">
+<!-- Logout Modal -->
+    <div id="logoutModal" class="fixed inset-0 z-[60] hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
         <div class="relative flex items-center justify-center min-h-screen p-4">
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">

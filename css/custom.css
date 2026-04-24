@@ -72,32 +72,43 @@ body {
 }
 
 /* ---------- Scrollbar ---------- */
+:root {
+    --scrollbar-thumb: #94A3B8;
+    --scrollbar-thumb-hover: #64748B;
+    --scrollbar-track: transparent;
+}
+.dark {
+    --scrollbar-thumb: #475569;
+    --scrollbar-thumb-hover: #64748B;
+}
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
+    background: transparent;
+    display: block;
 }
 ::-webkit-scrollbar-track {
-    background: transparent;
-}
-::-webkit-scrollbar-thumb {
-    background: #CBD5E1;
+    background: transparent !important;
     border-radius: 3px;
 }
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb) !important;
+    border-radius: 3px;
+    border: none !important;
+}
 ::-webkit-scrollbar-thumb:hover {
-    background: #94A3B8;
+    background: var(--scrollbar-thumb-hover) !important;
 }
-.dark ::-webkit-scrollbar-thumb {
-    background: #475569;
-}
-.dark ::-webkit-scrollbar-thumb:hover {
-    background: #64748B;
+::-webkit-scrollbar-corner {
+    background: transparent;
 }
 * {
-    scrollbar-width: thin;
-    scrollbar-color: #CBD5E1 transparent;
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track) !important;
 }
-.dark * {
-    scrollbar-color: #475569 transparent;
+html {
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--scrollbar-thumb) transparent !important;
 }
 
 /* ---------- Table Enhancements ---------- */

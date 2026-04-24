@@ -90,23 +90,27 @@
     const logoutModal = document.getElementById('logoutModal');
     const logoutBtn = document.getElementById('logoutBtn');
     const logoutCancel = document.getElementById('logoutCancel');
+    const sidebar = document.getElementById('sidebar');
 
     logoutBtn?.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         logoutModal?.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+        sidebar?.classList.add('blur-sm', 'opacity-50');
     });
 
     logoutCancel?.addEventListener('click', () => {
         logoutModal?.classList.add('hidden');
         document.body.style.overflow = '';
+        sidebar?.classList.remove('blur-sm', 'opacity-50');
     });
 
     logoutModal?.addEventListener('click', (e) => {
         if (e.target === logoutModal) {
             logoutModal.classList.add('hidden');
             document.body.style.overflow = '';
+            sidebar?.classList.remove('blur-sm', 'opacity-50');
         }
     });
 
