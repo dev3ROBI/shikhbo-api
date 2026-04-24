@@ -293,25 +293,25 @@ function toggleCatNode(header, catId) {
         if (chevron) chevron.style.transform = 'rotate(90deg)';
     }
     
-    // Load exams for this category via AJAX
-    if (examsDiv && examsDiv.querySelector('.text-xs.text-gray-400')) {
-        fetch(`/api/get_exams_by_category.php?category_id=${catId}`)
-            .then(r => r.json())
-            .then(data => {
-                if (data.status === 'success' && data.exams.length > 0) {
-                    examsDiv.innerHTML = data.exams.map(e => `
-                        <a href="index.php?page=questions&exam_id=${e.id}" class="block text-xs py-1.5 px-2 rounded hover:bg-indigo-50 text-gray-600 hover:text-shikhbo-primary transition-colors">
-                            <i class="fa-solid fa-file-alt mr-1 text-gray-400"></i>${e.title}
-                        </a>
-                    `).join('');
-                } else {
-                    examsDiv.innerHTML = '<div class="text-xs text-gray-400 py-1">No exams</div>';
-                }
-                examsDiv.classList.remove('hidden');
-            });
-    } else if (examsDiv) {
-        examsDiv.classList.toggle('hidden');
-    }
+// Load exams for this category via AJAX
+if (examsDiv && examsDiv.querySelector('.text-xs.text-gray-400')) {
+    fetch(`/api/get_exams_by_category.php?category_id=${catId}&direct=1`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success' && data.exams.length > 0) {
+                examsDiv.innerHTML = data.exams.map(e => `
+                    <a href="index.php?page=questions&exam_id=${e.id}" class="block text-xs py-1.5 px-2 rounded hover:bg-indigo-50 text-gray-600 hover:text-shikhbo-primary transition-colors">
+                        <i class="fa-solid fa-file-alt mr-1 text-gray-400"></i>${e.title}
+                    </a>
+                `).join('');
+            } else {
+                examsDiv.innerHTML = '<div class="text-xs text-gray-400 py-1">No exams</div>';
+            }
+            examsDiv.classList.remove('hidden');
+        });
+} else if (examsDiv) {
+    examsDiv.classList.toggle('hidden');
+}
 }
 
 // Tree search filter
