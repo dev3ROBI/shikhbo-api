@@ -1,27 +1,54 @@
 /* ========================================================
-   Shikhbo Admin Panel - Enhanced Custom Styles
+   Shikhbo Admin Panel — Enhanced Custom Styles v3
+   Mobile-First Responsive + Notification Panel + Tree
    ======================================================== */
 
-/* ---------- Sidebar Transition ---------- */
-.sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-.sidebar.open { transform: translateX(0); }
+/* ---------- Sidebar ---------- */
+.sidebar {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar.open {
+    transform: translateX(0);
+}
 
-/* ---------- Smooth Card Hover ---------- */
-.hover\:shadow-lg:hover { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
+/* ---------- Card Hover ---------- */
+.hover\:shadow-lg:hover {
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+}
 
-/* ---------- Custom Scrollbar ---------- */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-* { scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f5f9; }
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
 
-/* ---------- Table Enhancements ---------- */
-tr:hover { background-color: #f8fafc; }
+/* ---------- Table ---------- */
+tr:hover {
+    background-color: #f8fafc;
+}
 
-/* ---------- Active Navigation ---------- */
-.nav-active { background-color: #4F46E5; color: white; }
-.nav-link { position: relative; }
+/* ---------- Navigation ---------- */
+.nav-active {
+    background-color: #4F46E5;
+    color: white;
+}
+.nav-link {
+    position: relative;
+}
 .nav-link::before {
     content: '';
     position: absolute;
@@ -34,24 +61,41 @@ tr:hover { background-color: #f8fafc; }
     border-radius: 0 4px 4px 0;
     transition: transform 0.2s ease;
 }
-.nav-link:hover::before { transform: translateY(-50%) scale(1); }
-.nav-link.bg-shikhbo-primary::before { display: none; }
+.nav-link:hover::before {
+    transform: translateY(-50%) scale(1);
+}
+.nav-link.bg-shikhbo-primary::before {
+    display: none;
+}
+.nav-link.bg-shikhbo-primary {
+    box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+}
+.nav-link .w-8 {
+    width: 2rem;
+    height: 2rem;
+}
 
-/* ---------- Dropdown Animation ---------- */
-.dropdown-enter { opacity: 0; transform: scale(0.95) translateY(-10px); }
-.dropdown-enter-active { opacity: 1; transform: scale(1) translateY(0); transition: all 0.2s ease-out; }
+/* ---------- Focus ---------- */
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+    border-color: #4F46E5;
+}
 
-/* ---------- Responsive ---------- */
-@media (max-width: 1024px) { .sidebar-open { overflow: hidden; } }
+/* ---------- Spinner ---------- */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+.animate-spin,
+.fa-spin {
+    animation: spin 1s linear infinite;
+}
 
-/* ---------- Focus Rings ---------- */
-input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); border-color: #4F46E5; }
-
-/* ---------- Loading Spinner ---------- */
-@keyframes spin { to { transform: rotate(360deg); } }
-.fa-spin, .animate-spin { animation: spin 1s linear infinite; }
-
-/* ---------- Toast Notifications ---------- */
+/* ---------- Toast ---------- */
 .toast {
     display: flex;
     align-items: center;
@@ -63,64 +107,229 @@ input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px
     color: white;
     box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     animation: slideInRight 0.3s ease-out;
-    max-width: 380px;
+    max-width: min(380px, 90vw);
 }
-.toast-success { background: #059669; }
-.toast-error { background: #dc2626; }
-.toast-warning { background: #d97706; }
-.toast-info { background: #4F46E5; }
-.toast-exit { animation: slideOutRight 0.3s ease-in forwards; }
-@keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+.toast-success {
+    background: #059669;
+}
+.toast-error {
+    background: #dc2626;
+}
+.toast-warning {
+    background: #d97706;
+}
+.toast-info {
+    background: #4F46E5;
+}
+.toast-exit {
+    animation: slideOutRight 0.3s ease-in forwards;
+}
+@keyframes slideInRight {
+    from {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+}
 
 /* ---------- Category Tree ---------- */
-.category-card { transition: all 0.2s ease; }
-.category-card:hover { border-color: #4F46E5; }
-.subcategory-header .subchevron { transition: transform 0.3s ease; }
-
-/* ---------- Question Card Highlight ---------- */
-.question-card { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-.question-card:has(input:checked) { border-color: #4F46E5; background: #f5f3ff; }
-
-/* ---------- Custom Radio Styling ---------- */
-input[type="radio"] { accent-color: #4F46E5; }
-
-/* ---------- Pulse Animation for Timer ---------- */
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-.text-red-500.animate-pulse { animation: pulse 1s infinite; }
-
-/* ---------- Smooth Modal Transitions ---------- */
-.modal-enter { opacity: 0; transform: scale(0.95); transition: all 0.2s ease-out; }
-.modal-enter-active { opacity: 1; transform: scale(1); }
-
-/* ---------- Sticky Category Sidebar ---------- */
-@media (min-width: 1024px) {
-    .sticky-filter { position: sticky; top: 1rem; }
+.category-card {
+    transition: all 0.2s ease;
+}
+.category-card:hover {
+    border-color: #4F46E5;
+}
+.tree-node .chevron {
+    transition: transform 0.2s ease;
+}
+.tree-node > div:first-child:hover {
+    background: #f9fafb;
 }
 
-/* ---------- Skeleton Loading ---------- */
-@keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
+/* ---------- Question Card ---------- */
+.question-card {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.question-card:has(input:checked) {
+    border-color: #4F46E5;
+    background: #f5f3ff;
+}
+
+/* ---------- Radio ---------- */
+input[type="radio"] {
+    accent-color: #4F46E5;
+}
+
+/* ---------- Pulse ---------- */
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+.text-red-500.animate-pulse {
+    animation: pulse 1s infinite;
+}
+
+/* ---------- Modal ---------- */
+.modal-enter {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: all 0.2s ease-out;
+}
+.modal-enter-active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ---------- Progress ---------- */
+#progressBar {
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ---------- Dropdown ---------- */
+#profileButton:hover #dropdownChevron {
+    transform: rotate(180deg);
+}
+
+/* ---------- Skeleton ---------- */
+@keyframes shimmer {
+    0% {
+        background-position: -200px 0;
+    }
+    100% {
+        background-position: calc(200px + 100%) 0;
+    }
+}
 .skeleton {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);
     background-size: 200px 100%;
     animation: shimmer 1.5s infinite;
     border-radius: 4px;
 }
 
-/* ---------- Profile Dropdown ---------- */
-#profileButton:hover #dropdownChevron { transform: rotate(180deg); }
-
-/* ---------- Sidebar Nav Active Indicator ---------- */
-.nav-link.bg-shikhbo-primary {
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+/* ---------- Page Transition ---------- */
+#mainContent {
+    transition: opacity 0.15s ease;
 }
 
-/* ---------- Progress Bar Animation ---------- */
-#progressBar { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+/* =========================================== */
+/*  MOBILE RESPONSIVE BREAKPOINTS             */
+/* =========================================== */
 
-/* ---------- Category Tree Nodes ---------- */
-.tree-node .chevron { transition: transform 0.2s ease; }
-.tree-node > div:first-child:hover { background: #f9fafb; }
+/* sm (640px) — Small tablets and large phones */
+@media (max-width: 639px) {
+    /* Table → Card on mobile */
+    .mobile-card-view {
+        display: block;
+    }
+    .mobile-card-view ~ table {
+        display: none;
+    }
 
-/* ---------- Page Transition ---------- */
-#mainContent { transition: opacity 0.15s ease; }
+    /* Stack form fields */
+    .form-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Smaller headings */
+    h1 {
+        font-size: 1.375rem !important;
+    }
+    h2 {
+        font-size: 1.125rem !important;
+    }
+
+    /* Full-width buttons on mobile */
+    .btn-mobile-full {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Modal full-width */
+    .modal-mobile-full {
+        margin: 0.5rem;
+        max-height: 85vh;
+    }
+
+    /* Sidebar overlay */
+    #sidebarOverlay {
+        backdrop-filter: blur(2px);
+    }
+
+    /* Notification / Ticket panels full-width */
+    #notifPanel,
+    #ticketPanel {
+        width: calc(100vw - 2rem);
+        right: 0.5rem;
+    }
+
+    /* Tree indent reduced */
+    .tree-node .cat-children,
+    .tree-node .cat-exams {
+        margin-left: 0.75rem !important;
+    }
+}
+
+/* md (768px) */
+@media (max-width: 767px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .hide-on-mobile {
+        display: none !important;
+    }
+}
+
+/* lg (1024px) */
+@media (max-width: 1024px) {
+    .sidebar-open {
+        overflow: hidden;
+    }
+}
+
+/* xl (1280px) */
+@media (min-width: 1280px) {
+    .container-wide {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+}
+
+/* ---------- Notification Panel Specific ---------- */
+#notifPanel,
+#ticketPanel {
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+#notifPanel::-webkit-scrollbar,
+#ticketPanel::-webkit-scrollbar {
+    width: 3px;
+}
+
+/* ---------- Exam Tree Mobile ---------- */
+@media (max-width: 639px) {
+    .cat-exams .flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    .cat-exams .flex-shrink-0 {
+        margin-top: 0.25rem;
+    }
+}
