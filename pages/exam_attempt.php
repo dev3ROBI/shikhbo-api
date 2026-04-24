@@ -13,8 +13,8 @@ if ($examId <= 0):
             <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-shikhbo-primary to-indigo-400 rounded-2xl mb-4 shadow-lg">
                 <i class="fa-solid fa-graduation-cap text-3xl text-white"></i>
             </div>
-            <h1 class="text-3xl font-bold text-gray-800">Explore Exams</h1>
-            <p class="text-gray-500 mt-2">Browse categories to find the exam you want to attempt.</p>
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Explore Exams</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-2">Browse categories to find the exam you want to attempt.</p>
         </div>
 
         <div id="categoryBrowser" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -22,26 +22,26 @@ if ($examId <= 0):
                 $icon = $cat['icon'] ?? $typeIcons[$cat['category_type']] ?? 'fa-folder';
                 $color = $typeColors[$cat['category_type']] ?? 'text-gray-500';
             ?>
-                <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden category-card">
-                    <div class="category-header flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/20 border border-gray-100 dark:border-gray-700 overflow-hidden category-card">
+                    <div class="category-header flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                          onclick="toggleCategory(this, <?php echo $cat['id']; ?>)">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                            <div class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
                                 <i class="fa-solid <?php echo $icon; ?> text-lg <?php echo $color; ?>"></i>
                             </div>
                             <div>
-                                <span class="font-semibold text-gray-700"><?php echo sanitizeOutput($cat['name']); ?></span>
-                                <p class="text-xs text-gray-400 capitalize"><?php echo $cat['category_type']; ?></p>
+                                <span class="font-semibold text-gray-700 dark:text-gray-200"><?php echo sanitizeOutput($cat['name']); ?></span>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 capitalize"><?php echo $cat['category_type']; ?></p>
                             </div>
                         </div>
-                        <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-300 chevron"></i>
+                        <i class="fa-solid fa-chevron-down text-gray-400 dark:text-gray-500 transition-transform duration-300 chevron"></i>
                     </div>
-                    <div class="children-container hidden border-t border-gray-100" id="children-<?php echo $cat['id']; ?>">
-                        <div class="p-3 bg-gray-50 text-center text-sm text-gray-500">
+                    <div class="children-container hidden border-t border-gray-100 dark:border-gray-700" id="children-<?php echo $cat['id']; ?>">
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700 text-center text-sm text-gray-500 dark:text-gray-400">
                             <i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading...
                         </div>
                     </div>
-                    <div class="exams-container hidden border-t border-gray-100" id="exams-<?php echo $cat['id']; ?>"></div>
+                    <div class="exams-container hidden border-t border-gray-100 dark:border-gray-700" id="exams-<?php echo $cat['id']; ?>"></div>
                 </div>
             <?php endwhile; ?>
         </div>
@@ -67,12 +67,12 @@ if ($examId <= 0):
 
         chevron.style.transform = 'rotate(180deg)';
         childrenDiv.classList.remove('hidden');
-        childrenDiv.innerHTML = '<div class="p-4 text-center text-sm text-gray-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading subcategories...</div>';
+        childrenDiv.innerHTML = '<div class="p-4 text-center text-sm text-gray-500 dark:text-gray-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading subcategories...</div>';
 
         try {
             const [catRes, examRes] = await Promise.all([
                 fetch(`/api/get_categories.php?parent_id=${catId}`),
-                fetch(`/api/get_exams_by_category.php?category_id=${catId}&direct=1`)  // ✅ direct=1
+                fetch(`/api/get_exams_by_category.php?category_id=${catId}&direct=1`)
             ]);
             const catData = await catRes.json();
             const examData = await examRes.json();
@@ -82,14 +82,14 @@ if ($examId <= 0):
                     const icon = c.icon || typeIcons[c.category_type] || 'fa-folder';
                     const color = typeColors[c.category_type] || 'text-gray-500';
                     return `
-                    <div class="border-b border-gray-100 last:border-0">
-                        <div class="flex items-center justify-between p-3 pl-8 cursor-pointer hover:bg-gray-50 transition-colors subcategory-header"
+                    <div class="border-b border-gray-100 dark:border-gray-700 last:border-0">
+                        <div class="flex items-center justify-between p-3 pl-8 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors subcategory-header"
                              onclick="event.stopPropagation(); toggleSubCategory(this, ${c.id})">
                             <span class="flex items-center gap-2">
                                 <i class="fa-solid ${icon} text-xs ${color}"></i>
-                                <span class="text-sm text-gray-700">${c.name}</span>
+                                <span class="text-sm text-gray-700 dark:text-gray-200">${c.name}</span>
                             </span>
-                            <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-300 subchevron"></i>
+                            <i class="fa-solid fa-chevron-down text-xs text-gray-400 dark:text-gray-500 transition-transform duration-300 subchevron"></i>
                         </div>
                         <div class="subchildren-container hidden" id="children-${c.id}"></div>
                         <div class="subexams-container hidden" id="exams-${c.id}"></div>
@@ -101,10 +101,10 @@ if ($examId <= 0):
 
             if (examData.status === 'success' && examData.exams.length > 0) {
                 examsDiv.innerHTML = '<div class="p-3 space-y-2">' + examData.exams.map(e => `
-                    <a href="index.php?page=exam_attempt&exam_id=${e.id}" class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition border border-indigo-100">
+                    <a href="index.php?page=exam_attempt&exam_id=${e.id}" class="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition border border-indigo-100 dark:border-indigo-900/30">
                         <div>
-                            <p class="font-medium text-gray-700 text-sm">${e.title}</p>
-                            <p class="text-xs text-gray-500">${e.duration_minutes} min • ${e.total_marks} marks</p>
+                            <p class="font-medium text-gray-700 dark:text-gray-200 text-sm">${e.title}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">${e.duration_minutes} min • ${e.total_marks} marks</p>
                         </div>
                         <i class="fa-solid fa-circle-play text-shikhbo-primary text-xl"></i>
                     </a>
@@ -139,7 +139,7 @@ if ($examId <= 0):
         try {
             const [catRes, examRes] = await Promise.all([
                 fetch(`/api/get_categories.php?parent_id=${catId}`),
-                fetch(`/api/get_exams_by_category.php?category_id=${catId}&direct=1`)  // ✅ direct=1
+                fetch(`/api/get_exams_by_category.php?category_id=${catId}&direct=1`)
             ]);
             const catData = await catRes.json();
             const examData = await examRes.json();
@@ -147,10 +147,10 @@ if ($examId <= 0):
             if (catData.status === 'success' && catData.categories.length > 0) {
                 childrenDiv.classList.remove('hidden');
                 childrenDiv.innerHTML = catData.categories.map(c => `
-                    <div class="flex items-center justify-between p-2 pl-14 hover:bg-gray-50 cursor-pointer"
+                    <div class="flex items-center justify-between p-2 pl-14 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                          onclick="event.stopPropagation(); toggleSubCategory(this, ${c.id})">
-                        <span class="text-sm text-gray-600">${c.name}</span>
-                        <i class="fa-solid fa-chevron-down text-xs text-gray-400 subchevron"></i>
+                        <span class="text-sm text-gray-600 dark:text-gray-300">${c.name}</span>
+                        <i class="fa-solid fa-chevron-down text-xs text-gray-400 dark:text-gray-500 subchevron"></i>
                     </div>
                     <div class="subchildren-container hidden pl-6" id="children-${c.id}"></div>
                     <div class="subexams-container hidden" id="exams-${c.id}"></div>
@@ -160,9 +160,9 @@ if ($examId <= 0):
             if (examData.status === 'success' && examData.exams.length > 0) {
                 examsDiv.classList.remove('hidden');
                 examsDiv.innerHTML = '<div class="p-3 pl-14 space-y-2">' + examData.exams.map(e => `
-                    <a href="index.php?page=exam_attempt&exam_id=${e.id}" class="flex items-center justify-between p-2 bg-indigo-50 rounded hover:bg-indigo-100 transition text-sm">
-                        <span class="font-medium text-gray-700">${e.title}</span>
-                        <span class="text-xs text-gray-500">${e.duration_minutes} min</span>
+                    <a href="index.php?page=exam_attempt&exam_id=${e.id}" class="flex items-center justify-between p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition text-sm">
+                        <span class="font-medium text-gray-700 dark:text-gray-200">${e.title}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">${e.duration_minutes} min</span>
                     </a>
                 `).join('') + '</div>';
             }
@@ -203,60 +203,60 @@ $perPage = 25;
 ?>
 <div class="mb-6">
     <div class="flex items-center gap-3 mb-2">
-        <a href="index.php?page=exam_attempt" class="text-gray-500 hover:text-gray-700 transition-colors">
+        <a href="index.php?page=exam_attempt" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
             <i class="fa-solid fa-arrow-left mr-1"></i> Browse
         </a>
-        <h1 class="text-2xl font-bold text-gray-800"><?php echo sanitizeOutput($exam['title']); ?></h1>
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100"><?php echo sanitizeOutput($exam['title']); ?></h1>
     </div>
     <?php if ($breadcrumb): ?>
-        <div class="flex flex-wrap items-center text-sm text-gray-400 mb-2">
+        <div class="flex flex-wrap items-center text-sm text-gray-400 dark:text-gray-500 mb-2">
             <?php foreach ($breadcrumb as $i => $step): ?>
                 <?php if ($i > 0): ?><i class="fa-solid fa-angle-right mx-2 text-xs"></i><?php endif; ?>
                 <span><?php echo sanitizeOutput($step['name']); ?></span>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
-    <div class="flex flex-wrap items-center gap-3 text-gray-500 text-sm">
-        <span class="px-3 py-1 bg-gray-100 rounded-full"><i class="fa-regular fa-clock mr-1"></i><?php echo $exam['duration_minutes']; ?> min</span>
-        <span class="px-3 py-1 bg-gray-100 rounded-full"><i class="fa-solid fa-star mr-1"></i><?php echo $totalMarks; ?> marks</span>
-        <span class="px-3 py-1 bg-gray-100 rounded-full"><i class="fa-solid fa-chart-line mr-1"></i>Pass: <?php echo $exam['passing_percentage']; ?>%</span>
+    <div class="flex flex-wrap items-center gap-3 text-gray-500 dark:text-gray-400 text-sm">
+        <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full"><i class="fa-regular fa-clock mr-1"></i><?php echo $exam['duration_minutes']; ?> min</span>
+        <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full"><i class="fa-solid fa-star mr-1"></i><?php echo $totalMarks; ?> marks</span>
+        <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full"><i class="fa-solid fa-chart-line mr-1"></i>Pass: <?php echo $exam['passing_percentage']; ?>%</span>
     </div>
 </div>
 
-<div class="bg-white rounded-xl shadow-md p-4 mb-4 flex items-center justify-between">
-    <span class="text-lg font-semibold text-gray-700"><i class="fa-regular fa-hourglass-half mr-2"></i>Time Left:</span>
-    <span id="timer" class="text-2xl font-mono font-bold text-shikhbo-primary"></span>
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/20 p-4 mb-4 flex items-center justify-between">
+    <span class="text-lg font-semibold text-gray-700 dark:text-gray-200"><i class="fa-regular fa-hourglass-half mr-2"></i>Time Left:</span>
+    <span id="timer" class="text-2xl font-mono font-bold text-shikhbo-primary dark:text-indigo-400"></span>
 </div>
 
-<div class="bg-white rounded-xl shadow-md p-4 mb-4">
-    <div class="flex justify-between text-sm text-gray-600 mb-1">
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/20 p-4 mb-4">
+    <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
         <span id="pageInfo">Page 1 of 1</span>
         <span id="progressText">0%</span>
     </div>
-    <div class="w-full bg-gray-200 rounded-full h-2.5">
-        <div id="progressBar" class="bg-shikhbo-primary h-2.5 rounded-full transition-all duration-300" style="width:0%"></div>
+    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+        <div id="progressBar" class="bg-shikhbo-primary dark:bg-indigo-400 h-2.5 rounded-full transition-all duration-300" style="width:0%"></div>
     </div>
 </div>
 
-<div id="questionPalette" class="bg-white rounded-xl shadow-md p-4 mb-4 hidden">
-    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Question Palette</h3>
+<div id="questionPalette" class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/20 p-4 mb-4 hidden">
+    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Question Palette</h3>
     <div id="paletteGrid" class="flex flex-wrap gap-1.5"></div>
-    <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-green-100 border border-green-400"></span> Answered</span>
-        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-gray-100 border border-gray-300"></span> Not Answered</span>
+    <div class="flex items-center gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-green-100 dark:bg-green-900/30 border border-green-400"></span> Answered</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600"></span> Not Answered</span>
     </div>
 </div>
 
 <form id="examForm" class="space-y-6"><div id="questionsContainer"></div></form>
 
 <div class="mt-6 flex justify-between">
-    <button id="prevBtn" class="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+    <button id="prevBtn" class="px-6 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
         <i class="fa-solid fa-chevron-left mr-2"></i>Previous
     </button>
-    <button id="nextBtn" class="px-6 py-2.5 bg-shikhbo-primary text-white rounded-lg hover:bg-indigo-700">
+    <button id="nextBtn" class="px-6 py-2.5 bg-shikhbo-primary text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600">
         Next<i class="fa-solid fa-chevron-right ml-2"></i>
     </button>
-    <button id="submitBtn" class="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 hidden">
+    <button id="submitBtn" class="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-500 hidden">
         <i class="fa-solid fa-paper-plane mr-2"></i>Submit Exam
     </button>
 </div>
@@ -277,7 +277,7 @@ loadAnswersFromStorage();
 
 async function loadAllQuestions(){
     const container = document.getElementById('questionsContainer');
-    container.innerHTML = '<div class="text-center py-16"><div class="inline-block w-12 h-12 border-4 border-shikhbo-primary border-t-transparent rounded-full animate-spin mb-4"></div><p class="text-gray-500">Loading questions...</p></div>';
+    container.innerHTML = '<div class="text-center py-16"><div class="inline-block w-12 h-12 border-4 border-shikhbo-primary dark:border-indigo-400 border-t-transparent rounded-full animate-spin mb-4"></div><p class="text-gray-500 dark:text-gray-400">Loading questions...</p></div>';
     try {
         const res = await fetch(`/api/get_exam_questions.php?exam_id=${examId}&page=1&per_page=9999&seed=${Date.now()}`);
         const data = await res.json();
@@ -285,7 +285,7 @@ async function loadAllQuestions(){
             questionsData = data.questions;
             totalPages = Math.ceil(questionsData.length/perPage);
             if(questionsData.length===0){
-                container.innerHTML = '<div class="text-center py-16 text-gray-500"><i class="fa-solid fa-circle-question text-4xl mb-3 block"></i><p>No questions available.</p></div>';
+                container.innerHTML = '<div class="text-center py-16 text-gray-500 dark:text-gray-400"><i class="fa-solid fa-circle-question text-4xl mb-3 block"></i><p>No questions available.</p></div>';
                 document.getElementById('prevBtn').style.display='none';
                 document.getElementById('nextBtn').style.display='none';
                 document.getElementById('submitBtn').style.display='none';
@@ -295,10 +295,10 @@ async function loadAllQuestions(){
             updatePagination();
             buildPalette();
         } else {
-            container.innerHTML = '<div class="text-center py-16 text-red-500"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3 block"></i><p>Failed to load questions.</p></div>';
+            container.innerHTML = '<div class="text-center py-16 text-red-500 dark:text-red-400"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3 block"></i><p>Failed to load questions.</p></div>';
         }
     } catch(e) {
-        container.innerHTML = '<div class="text-center py-16 text-red-500"><i class="fa-solid fa-plug-circle-xmark text-4xl mb-3 block"></i><p>Network error.</p></div>';
+        container.innerHTML = '<div class="text-center py-16 text-red-500 dark:text-red-400"><i class="fa-solid fa-plug-circle-xmark text-4xl mb-3 block"></i><p>Network error.</p></div>';
     }
 }
 
@@ -311,19 +311,19 @@ function showPage(page){
         const qNum = start + idx + 1;
         const selected = answers[q.id] || '';
         html += `
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5" id="q-card-${q.id}">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/20 border border-gray-100 dark:border-gray-700 p-5" id="q-card-${q.id}">
             <div class="flex items-start justify-between mb-3">
                 <div>
-                    <span class="text-xs text-gray-400 font-mono bg-gray-100 px-2 py-0.5 rounded">Q${qNum}</span>
-                    <p class="text-gray-800 font-medium mt-2">${q.question_text}</p>
+                    <span class="text-xs text-gray-400 dark:text-gray-500 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">Q${qNum}</span>
+                    <p class="text-gray-800 dark:text-gray-100 font-medium mt-2">${q.question_text}</p>
                 </div>
-                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">${q.marks} mark${q.marks>1?'s':''}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">${q.marks} mark${q.marks>1?'s':''}</span>
             </div>
             <div class="mt-4 space-y-2">
                 ${['a','b','c','d'].map(opt => `
-                    <label class="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${selected===opt?'border-shikhbo-primary bg-indigo-50':''}">
-                        <input type="radio" name="q_${q.id}" value="${opt}" class="w-4 h-4 text-shikhbo-primary" onchange="selectAnswer(${q.id},'${opt}')" ${selected===opt?'checked':''}>
-                        <span class="text-sm">${q['option_'+opt]}</span>
+                    <label class="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selected===opt?'border-shikhbo-primary dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20':''}">
+                        <input type="radio" name="q_${q.id}" value="${opt}" class="w-4 h-4 text-shikhbo-primary dark:text-indigo-400" onchange="selectAnswer(${q.id},'${opt}')" ${selected===opt?'checked':''}>
+                        <span class="text-sm text-gray-700 dark:text-gray-200">${q['option_'+opt]}</span>
                     </label>
                 `).join('')}
             </div>
@@ -338,8 +338,10 @@ function selectAnswer(qid, option){
     answers[qid] = option;
     saveAnswersToStorage();
     document.querySelectorAll(`#q-card-${qid} label`).forEach(l => {
-        l.classList.remove('border-shikhbo-primary','bg-indigo-50');
-        if(l.querySelector('input').value===option) l.classList.add('border-shikhbo-primary','bg-indigo-50');
+        l.classList.remove('border-shikhbo-primary','dark:border-indigo-400','bg-indigo-50','dark:bg-indigo-900/20');
+        if(l.querySelector('input').value===option) {
+            l.classList.add('border-shikhbo-primary','dark:border-indigo-400','bg-indigo-50','dark:bg-indigo-900/20');
+        }
     });
     buildPalette();
 }
@@ -364,7 +366,10 @@ function buildPalette(){
         const qid = questionsData[i].id;
         const answered = answers[qid] ? true : false;
         const activePage = Math.floor(i/perPage)+1;
-        btns += `<button type="button" class="w-8 h-8 rounded-full text-xs font-medium border transition ${answered?'bg-green-100 border-green-400 text-green-800':'bg-gray-100 border-gray-200 text-gray-600'} ${activePage===currentPage?'ring-2 ring-shikhbo-primary':''}" onclick="goToQuestion(${i})" title="Q${i+1}">${i+1}</button>`;
+        btns += `<button type="button" class="w-8 h-8 rounded-full text-xs font-medium border transition ${
+            answered ? 'bg-green-100 dark:bg-green-900/30 border-green-400 dark:border-green-600 text-green-800 dark:text-green-300' : 
+            'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300'
+        } ${activePage===currentPage?'ring-2 ring-shikhbo-primary dark:ring-indigo-400':''}" onclick="goToQuestion(${i})" title="Q${i+1}">${i+1}</button>`;
     }
     grid.innerHTML = btns;
 }
@@ -382,8 +387,8 @@ function startTimer(){
         const mins = Math.floor(timer/60);
         const secs = timer%60;
         timerElem.textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
-        if(timer < 300) timerElem.classList.add('text-red-500');
-        else timerElem.classList.remove('text-red-500');
+        if(timer < 300) { timerElem.classList.add('text-red-500','dark:text-red-400'); timerElem.classList.remove('text-shikhbo-primary','dark:text-indigo-400'); }
+        else { timerElem.classList.remove('text-red-500','dark:text-red-400'); timerElem.classList.add('text-shikhbo-primary','dark:text-indigo-400'); }
         timer--;
     }, 1000);
 }
@@ -391,7 +396,7 @@ function startTimer(){
 function showConfirmModal(msg, cb){
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 z-50 flex items-center justify-center';
-    modal.innerHTML = `<div class="absolute inset-0 bg-black bg-opacity-50"></div><div class="relative bg-white rounded-xl shadow-xl p-6 max-w-md mx-4 text-center"><p class="text-gray-800 mb-4">${msg.replace(/\n/g,'<br>')}</p><div class="flex justify-center gap-3"><button class="px-4 py-2 bg-gray-200 rounded-lg cancel-btn">Cancel</button><button class="px-4 py-2 bg-shikhbo-primary text-white rounded-lg confirm-btn">Confirm</button></div></div>`;
+    modal.innerHTML = `<div class="absolute inset-0 bg-black bg-opacity-50"></div><div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md mx-4 text-center"><p class="text-gray-800 dark:text-gray-100 mb-4">${msg.replace(/\n/g,'<br>')}</p><div class="flex justify-center gap-3"><button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg cancel-btn">Cancel</button><button class="px-4 py-2 bg-shikhbo-primary text-white rounded-lg confirm-btn">Confirm</button></div></div>`;
     document.body.appendChild(modal);
     modal.querySelector('.cancel-btn').addEventListener('click', ()=>modal.remove());
     modal.querySelector('.confirm-btn').addEventListener('click', ()=>{ modal.remove(); cb(); });

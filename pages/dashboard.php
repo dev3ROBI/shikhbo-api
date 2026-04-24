@@ -36,10 +36,10 @@ $passRate = $totalResults > 0 ? round(($passCount / $totalResults) * 100, 1) : 0
 <div class="mb-8">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-            <p class="text-gray-500 mt-1">Welcome back, <?php echo sanitizeOutput($_SESSION['admin_name']); ?>!</p>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Admin Dashboard</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Welcome back, <?php echo sanitizeOutput($_SESSION['admin_name']); ?>!</p>
         </div>
-        <div class="flex items-center space-x-2 text-sm text-gray-500">
+        <div class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
             <i class="fa-solid fa-calendar-day"></i>
             <span><?php echo date('l, F j, Y'); ?></span>
         </div>
@@ -49,57 +49,57 @@ $passRate = $totalResults > 0 ? round(($passCount / $totalResults) * 100, 1) : 0
 <!-- Stats Grid -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
     <!-- Total Students -->
-    <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-green-500 transition-all hover:shadow-lg">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/20 p-5 border-l-4 border-green-500 transition-all hover:shadow-lg">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Students</p>
-                <p class="text-3xl font-bold text-gray-800 mt-1"><?php echo number_format($totalStudents); ?></p>
-                <p class="text-xs text-green-600 mt-1">+<?php echo $todayStudents; ?> today</p>
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Students</p>
+                <p class="text-3xl font-bold text-gray-800 dark:text-gray-100 mt-1"><?php echo number_format($totalStudents); ?></p>
+                <p class="text-xs text-green-600 dark:text-green-400 mt-1">+<?php echo $todayStudents; ?> today</p>
             </div>
-            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <i class="fa-solid fa-users text-green-600 text-xl"></i>
+            <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-users text-green-600 dark:text-green-400 text-xl"></i>
             </div>
         </div>
     </div>
 
     <!-- Active Exams -->
-    <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-blue-500 transition-all hover:shadow-lg">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/20 p-5 border-l-4 border-blue-500 transition-all hover:shadow-lg">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Active Exams</p>
-                <p class="text-3xl font-bold text-gray-800 mt-1"><?php echo number_format($activeExams); ?></p>
-                <p class="text-xs text-gray-500 mt-1">of <?php echo number_format($totalExams); ?> total</p>
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Active Exams</p>
+                <p class="text-3xl font-bold text-gray-800 dark:text-gray-100 mt-1"><?php echo number_format($activeExams); ?></p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">of <?php echo number_format($totalExams); ?> total</p>
             </div>
-            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <i class="fa-solid fa-file-alt text-blue-600 text-xl"></i>
+            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-file-alt text-blue-600 dark:text-blue-400 text-xl"></i>
             </div>
         </div>
     </div>
 
     <!-- Questions -->
-    <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-purple-500 transition-all hover:shadow-lg">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/20 p-5 border-l-4 border-purple-500 transition-all hover:shadow-lg">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Question Bank</p>
-                <p class="text-3xl font-bold text-gray-800 mt-1"><?php echo number_format($totalQuestions); ?></p>
-                <p class="text-xs text-gray-500 mt-1"><?php echo $totalCategories; ?> categories</p>
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Question Bank</p>
+                <p class="text-3xl font-bold text-gray-800 dark:text-gray-100 mt-1"><?php echo number_format($totalQuestions); ?></p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><?php echo $totalCategories; ?> categories</p>
             </div>
-            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <i class="fa-solid fa-database text-purple-600 text-xl"></i>
+            <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-database text-purple-600 dark:text-purple-400 text-xl"></i>
             </div>
         </div>
     </div>
 
     <!-- Pass Rate -->
-    <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-indigo-500 transition-all hover:shadow-lg">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/20 p-5 border-l-4 border-indigo-500 transition-all hover:shadow-lg">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Pass Rate</p>
-                <p class="text-3xl font-bold text-gray-800 mt-1"><?php echo $passRate; ?>%</p>
-                <p class="text-xs text-gray-500 mt-1"><?php echo number_format($totalResults); ?> attempts</p>
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Pass Rate</p>
+                <p class="text-3xl font-bold text-gray-800 dark:text-gray-100 mt-1"><?php echo $passRate; ?>%</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><?php echo number_format($totalResults); ?> attempts</p>
             </div>
-            <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
-                <i class="fa-solid fa-chart-line text-indigo-600 text-xl"></i>
+            <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-chart-line text-indigo-600 dark:text-indigo-400 text-xl"></i>
             </div>
         </div>
     </div>
@@ -107,81 +107,81 @@ $passRate = $totalResults > 0 ? round(($passCount / $totalResults) * 100, 1) : 0
 
 <!-- Quick Actions -->
 <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-8">
-    <a href="index.php?page=exams" class="bg-white rounded-xl shadow-sm p-3 text-center hover:shadow-md transition-all border border-gray-100 hover:border-shikhbo-primary">
+    <a href="index.php?page=exams" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/20 p-3 text-center hover:shadow-md transition-all border border-gray-100 dark:border-gray-700 hover:border-shikhbo-primary dark:hover:border-shikhbo-primary">
         <i class="fa-solid fa-plus-circle text-shikhbo-primary text-xl mb-1 block"></i>
-        <span class="text-xs font-medium text-gray-600">New Exam</span>
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">New Exam</span>
     </a>
-    <a href="index.php?page=questions" class="bg-white rounded-xl shadow-sm p-3 text-center hover:shadow-md transition-all border border-gray-100 hover:border-shikhbo-primary">
+    <a href="index.php?page=questions" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/20 p-3 text-center hover:shadow-md transition-all border border-gray-100 dark:border-gray-700 hover:border-shikhbo-primary">
         <i class="fa-solid fa-circle-plus text-green-600 text-xl mb-1 block"></i>
-        <span class="text-xs font-medium text-gray-600">Add Question</span>
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Add Question</span>
     </a>
-    <a href="index.php?page=categories" class="bg-white rounded-xl shadow-sm p-3 text-center hover:shadow-md transition-all border border-gray-100 hover:border-shikhbo-primary">
+    <a href="index.php?page=categories" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/20 p-3 text-center hover:shadow-md transition-all border border-gray-100 dark:border-gray-700 hover:border-shikhbo-primary">
         <i class="fa-solid fa-layer-group text-purple-600 text-xl mb-1 block"></i>
-        <span class="text-xs font-medium text-gray-600">Categories</span>
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Categories</span>
     </a>
-    <a href="index.php?page=students" class="bg-white rounded-xl shadow-sm p-3 text-center hover:shadow-md transition-all border border-gray-100 hover:border-shikhbo-primary">
+    <a href="index.php?page=students" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/20 p-3 text-center hover:shadow-md transition-all border border-gray-100 dark:border-gray-700 hover:border-shikhbo-primary">
         <i class="fa-solid fa-user-plus text-orange-600 text-xl mb-1 block"></i>
-        <span class="text-xs font-medium text-gray-600">Students</span>
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Students</span>
     </a>
-    <a href="index.php?page=results" class="bg-white rounded-xl shadow-sm p-3 text-center hover:shadow-md transition-all border border-gray-100 hover:border-shikhbo-primary">
+    <a href="index.php?page=results" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/20 p-3 text-center hover:shadow-md transition-all border border-gray-100 dark:border-gray-700 hover:border-shikhbo-primary">
         <i class="fa-solid fa-chart-bar text-blue-600 text-xl mb-1 block"></i>
-        <span class="text-xs font-medium text-gray-600">Results</span>
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Results</span>
     </a>
-    <a href="index.php?page=admins" class="bg-white rounded-xl shadow-sm p-3 text-center hover:shadow-md transition-all border border-gray-100 hover:border-shikhbo-primary">
+    <a href="index.php?page=admins" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/20 p-3 text-center hover:shadow-md transition-all border border-gray-100 dark:border-gray-700 hover:border-shikhbo-primary">
         <i class="fa-solid fa-user-gear text-yellow-600 text-xl mb-1 block"></i>
-        <span class="text-xs font-medium text-gray-600">Admins</span>
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Admins</span>
     </a>
-    <a href="index.php?page=database" class="bg-white rounded-xl shadow-sm p-3 text-center hover:shadow-md transition-all border border-gray-100 hover:border-shikhbo-primary">
-        <i class="fa-solid fa-terminal text-gray-600 text-xl mb-1 block"></i>
-        <span class="text-xs font-medium text-gray-600">Database</span>
+    <a href="index.php?page=database" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/20 p-3 text-center hover:shadow-md transition-all border border-gray-100 dark:border-gray-700 hover:border-shikhbo-primary">
+        <i class="fa-solid fa-terminal text-gray-600 dark:text-gray-300 text-xl mb-1 block"></i>
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Database</span>
     </a>
-    <a href="index.php?page=settings" class="bg-white rounded-xl shadow-sm p-3 text-center hover:shadow-md transition-all border border-gray-100 hover:border-shikhbo-primary">
-        <i class="fa-solid fa-gear text-gray-600 text-xl mb-1 block"></i>
-        <span class="text-xs font-medium text-gray-600">Settings</span>
+    <a href="index.php?page=settings" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/20 p-3 text-center hover:shadow-md transition-all border border-gray-100 dark:border-gray-700 hover:border-shikhbo-primary">
+        <i class="fa-solid fa-gear text-gray-600 dark:text-gray-300 text-xl mb-1 block"></i>
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Settings</span>
     </a>
 </div>
 
 <!-- Two Column Layout -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Recent Results -->
-    <div class="lg:col-span-2 bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-800">Recent Exam Results</h3>
+    <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Recent Exam Results</h3>
             <a href="index.php?page=results" class="text-sm text-shikhbo-primary hover:underline">View All</a>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exam</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Student</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Exam</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Score</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     <?php if ($recentResults && $recentResults->num_rows > 0): ?>
                         <?php while ($r = $recentResults->fetch_assoc()): ?>
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800 dark:text-gray-100">
                                     <?php echo sanitizeOutput($r['student_name']); ?>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                                     <?php echo sanitizeOutput($r['exam_title']); ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <span class="font-medium"><?php echo $r['score']; ?>/<?php echo $r['total_marks']; ?></span>
-                                    <span class="text-gray-400 text-xs ml-1">(<?php echo $r['percentage']; ?>%)</span>
+                                    <span class="font-medium text-gray-800 dark:text-gray-100"><?php echo $r['score']; ?>/<?php echo $r['total_marks']; ?></span>
+                                    <span class="text-gray-400 dark:text-gray-500 text-xs ml-1">(<?php echo $r['percentage']; ?>%)</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full <?php echo $r['status']==='passed' ? 'text-green-800 bg-green-100' : 'text-red-800 bg-red-100'; ?>">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full <?php echo $r['status']==='passed' ? 'text-green-800 bg-green-100 dark:text-green-300 dark:bg-green-900/30' : 'text-red-800 bg-red-100 dark:text-red-300 dark:bg-red-900/30'; ?>">
                                         <?php echo ucfirst($r['status']); ?>
                                     </span>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">No results yet.</td></tr>
+                        <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">No results yet.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -189,25 +189,25 @@ $passRate = $totalResults > 0 ? round(($passCount / $totalResults) * 100, 1) : 0
     </div>
 
     <!-- Recent Students -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-800">New Students</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">New Students</h3>
             <a href="index.php?page=students" class="text-sm text-shikhbo-primary hover:underline">View All</a>
         </div>
-        <div class="divide-y divide-gray-200">
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
             <?php if ($recentStudents && $recentStudents->num_rows > 0): ?>
                 <?php while ($stu = $recentStudents->fetch_assoc()): ?>
-                    <div class="px-6 py-3 flex items-center space-x-3 hover:bg-gray-50">
+                    <div class="px-6 py-3 flex items-center space-x-3 hover:bg-gray-50 dark:hover:bg-gray-700">
                         <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($stu['name']); ?>&background=4F46E5&color=fff&size=40" class="w-10 h-10 rounded-full">
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-800 truncate"><?php echo sanitizeOutput($stu['name']); ?></p>
-                            <p class="text-xs text-gray-500 truncate"><?php echo sanitizeOutput($stu['email']); ?></p>
+                            <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate"><?php echo sanitizeOutput($stu['name']); ?></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate"><?php echo sanitizeOutput($stu['email']); ?></p>
                         </div>
-                        <span class="text-xs text-gray-400"><?php echo date('M j', strtotime($stu['created_at'])); ?></span>
+                        <span class="text-xs text-gray-400 dark:text-gray-500"><?php echo date('M j', strtotime($stu['created_at'])); ?></span>
                     </div>
                 <?php endwhile; ?>
             <?php else: ?>
-                <div class="px-6 py-8 text-center text-gray-500">No students yet.</div>
+                <div class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">No students yet.</div>
             <?php endif; ?>
         </div>
     </div>

@@ -37,7 +37,7 @@ if (isset($_GET['expired'])) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,6 +46,7 @@ if (isset($_GET['expired'])) {
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -63,32 +64,38 @@ if (isset($_GET['expired'])) {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
+        .dark body {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+        }
         .login-card {
             backdrop-filter: blur(10px);
             background: rgba(255, 255, 255, 0.98);
         }
+        .dark .login-card {
+            background: rgba(30, 41, 59, 0.95);
+        }
     </style>
 </head>
 <body class="font-sans antialiased flex items-center justify-center min-h-screen p-4">
-    <div class="login-card w-full max-w-md rounded-2xl shadow-2xl p-8">
+    <div class="login-card w-full max-w-md rounded-2xl shadow-2xl p-8 dark:shadow-gray-900/50">
         <!-- Logo & Header -->
         <div class="text-center mb-8">
             <div class="inline-flex items-center justify-center w-16 h-16 bg-shikhbo-primary rounded-full mb-4">
                 <i class="fa-solid fa-graduation-cap text-2xl text-white"></i>
             </div>
-            <h1 class="text-2xl font-bold text-gray-800">Shikhbo Admin</h1>
-            <p class="text-gray-500 text-sm mt-1">Secure Admin Panel Access</p>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Shikhbo Admin</h1>
+            <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Secure Admin Panel Access</p>
         </div>
 
         <!-- Messages -->
         <?php if ($error): ?>
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center space-x-2">
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-4 flex items-center space-x-2">
                 <i class="fa-solid fa-circle-exclamation"></i>
                 <span><?php echo sanitizeOutput($error); ?></span>
             </div>
         <?php endif; ?>
         <?php if ($success): ?>
-            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-center space-x-2">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg mb-4 flex items-center space-x-2">
                 <i class="fa-solid fa-circle-check"></i>
                 <span><?php echo sanitizeOutput($success); ?></span>
             </div>
@@ -100,31 +107,31 @@ if (isset($_GET['expired'])) {
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
                     <div class="relative">
-                        <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"></i>
                         <input type="email" name="email" required
-                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary focus:border-transparent outline-none transition-all"
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary focus:border-transparent outline-none transition-all"
                                placeholder="admin@shikhbo.com">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <div class="relative" x-data="{ show: false }">
-                        <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"></i>
                         <input type="password" name="password" id="password" required
-                               class="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary focus:border-transparent outline-none transition-all"
+                               class="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary focus:border-transparent outline-none transition-all"
                                placeholder="••••••••">
                         <button type="button" onclick="togglePassword()"
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                             <i class="fa-solid fa-eye" id="toggleIcon"></i>
                         </button>
                     </div>
                 </div>
 
                 <button type="submit"
-                        class="w-full bg-shikhbo-primary text-white py-3 rounded-lg font-medium hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center space-x-2">
+                        class="w-full bg-shikhbo-primary text-white py-3 rounded-lg font-medium hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all duration-200 flex items-center justify-center space-x-2">
                     <i class="fa-solid fa-right-to-bracket"></i>
                     <span>Sign In</span>
                 </button>
@@ -132,7 +139,7 @@ if (isset($_GET['expired'])) {
         </form>
 
         <!-- Footer -->
-        <div class="mt-6 text-center text-xs text-gray-400">
+        <div class="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
             <p>🔒 Secured with CSRF Protection & Rate Limiting</p>
             <p class="mt-1">Shikhbo API v1.0</p>
         </div>

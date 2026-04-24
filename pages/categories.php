@@ -44,11 +44,22 @@ function renderRows($tree,$level=0){
     foreach($tree as $c){
         $ind=str_repeat('&nbsp;&nbsp;&nbsp;',min($level,3));
         $clr=$tc[$c['category_type']]??'gray';$ch=!empty($c['children']);
-        $h.="<tr class='hover:bg-gray-50 border-b border-gray-100'><td class='px-3 py-2.5 text-sm'><span class='inline-flex items-center min-w-0'>{$ind}<i class='fa-solid fa-folder-tree text-{$clr}-400 mr-1.5 text-xs flex-shrink-0'></i><span class='font-medium text-gray-800 truncate'>".sanitizeOutput($c['name'])."</span>".($ch?"<span class='text-xs text-gray-400 ml-1'>(+".count($c['children']).")</span>":"")."</span></td>";
-        $h.="<td class='px-3 py-2.5 text-xs text-gray-500 hidden sm:table-cell'>Lvl {$c['level']}</td>";
-        $h.="<td class='px-3 py-2.5 hidden sm:table-cell'><span class='px-1.5 py-0.5 text-[10px] rounded-full bg-{$clr}-100 text-{$clr}-700'>{$c['category_type']}</span></td>";
-        $h.="<td class='px-3 py-2.5 hidden sm:table-cell'>".($c['is_active']?"<span class='text-green-600 text-xs'>Active</span>":"<span class='text-red-500 text-xs'>Inactive</span>")."</td>";
-        $h.="<td class='px-3 py-2.5 text-xs space-x-1.5'><button onclick='editCategory(".htmlspecialchars(json_encode($c),ENT_QUOTES,'UTF-8').")' class='text-shikhbo-primary hover:underline'><i class='fa-solid fa-pen-to-square'></i></button><button onclick='deleteCategory({$c['id']})' class='text-red-600 hover:underline'><i class='fa-solid fa-trash'></i></button></td></tr>";
+        $h.="<tr class='hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700'>
+            <td class='px-3 py-2.5 text-sm'>
+                <span class='inline-flex items-center min-w-0'>
+                    {$ind}<i class='fa-solid fa-folder-tree text-{$clr}-400 mr-1.5 text-xs flex-shrink-0'></i>
+                    <span class='font-medium text-gray-800 dark:text-gray-100 truncate'>".sanitizeOutput($c['name'])."</span>
+                    ".($ch?"<span class='text-xs text-gray-400 dark:text-gray-500 ml-1'>(+".count($c['children']).")</span>":"")."
+                </span>
+            </td>
+            <td class='px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400 hidden sm:table-cell'>Lvl {$c['level']}</td>
+            <td class='px-3 py-2.5 hidden sm:table-cell'><span class='px-1.5 py-0.5 text-[10px] rounded-full bg-{$clr}-100 dark:bg-{$clr}-900/30 text-{$clr}-700 dark:text-{$clr}-300'>{$c['category_type']}</span></td>
+            <td class='px-3 py-2.5 hidden sm:table-cell'>".($c['is_active']?"<span class='text-green-600 dark:text-green-400 text-xs'>Active</span>":"<span class='text-red-500 dark:text-red-400 text-xs'>Inactive</span>")."</td>
+            <td class='px-3 py-2.5 text-xs space-x-1.5'>
+                <button onclick='editCategory(".htmlspecialchars(json_encode($c),ENT_QUOTES,'UTF-8').")' class='text-shikhbo-primary hover:underline'><i class='fa-solid fa-pen-to-square'></i></button>
+                <button onclick='deleteCategory({$c['id']})' class='text-red-600 hover:underline'><i class='fa-solid fa-trash'></i></button>
+            </td>
+        </tr>";
         if($ch) $h.=renderRows($c['children'],$level+1);
     }
     return $h;
@@ -56,83 +67,79 @@ function renderRows($tree,$level=0){
 ?>
 
 <?php if(isset($error)):?>
-<div
-    class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm"><?php echo sanitizeOutput($error);?></div><?php endif;?>
+<div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+    <?php echo sanitizeOutput($error);?>
+</div>
+<?php endif;?>
 <?php if(isset($success)):?>
-<div
-    class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm"><?php echo sanitizeOutput($success);?></div><?php endif;?>
+<div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg mb-4 text-sm">
+    <?php echo sanitizeOutput($success);?>
+</div>
+<?php endif;?>
 
-<div
-    class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
     <div>
-        <h1 class="text-2xl font-bold text-gray-800">Exam Categories</h1>
-        <p class="text-gray-500 text-sm mt-1"><?php echo count($catsById);?>
-            categories</p>
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Exam Categories</h1>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mt-1"><?php echo count($catsById);?> categories</p>
     </div>
-    <button
-        onclick="openAddModal()"
-        class="px-4 py-2 bg-shikhbo-primary text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors flex-shrink-0">
-        <i class="fa-solid fa-plus mr-1.5"></i>Add Category</button>
+    <button onclick="openAddModal()" class="px-4 py-2 bg-shikhbo-primary text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors flex-shrink-0">
+        <i class="fa-solid fa-plus mr-1.5"></i>Add Category
+    </button>
 </div>
 
-<div
-    class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/20 border border-gray-100 dark:border-gray-700 overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full">
-            <thead class="bg-gray-50">
+            <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th
-                        class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Level</th>
-                    <th
-                        class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Type</th>
-                    <th
-                        class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Status</th>
-                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Name</th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase hidden sm:table-cell">Level</th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase hidden sm:table-cell">Type</th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase hidden sm:table-cell">Status</th>
+                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100"><?php echo renderRows($tree);?></tbody>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                <?php echo renderRows($tree);?>
+            </tbody>
         </table>
     </div>
 </div>
 
-<!-- Modal (unchanged) -->
-<div
-    id="categoryModal"
-    class="fixed inset-0 z-50 flex items-center justify-center hidden">
+<!-- Modal -->
+<div id="categoryModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeModal()"></div>
-    <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+    <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold" id="catModalTitle">Add Category</h3>
-            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100" id="catModalTitle">Add Category</h3>
+            <button onclick="closeModal()" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
         </div>
         <form method="POST" class="space-y-4" id="catForm">
             <?php echo getCSRFTokenField();?>
-            <input type="hidden" name="action" id="catAction" value="add_category"><input type="hidden" name="category_id" id="catId">
+            <input type="hidden" name="action" id="catAction" value="add_category">
+            <input type="hidden" name="category_id" id="catId">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label><input
-                    type="text"
-                    name="name"
-                    id="catName"
-                    required="required"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary outline-none"></div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Parent</label>
-                <select
-                    name="parent_id"
-                    id="catParent"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                    <option value="">Root Category</option><?php $parents=$mysqli->query("SELECT id,name,level FROM exam_categories ORDER BY level,id");while($p=$parents->fetch_assoc()):?>
-                    <option value="<?php echo $p['id'];?>"><?php echo str_repeat('— ',max(0,$p['level']-1)).sanitizeOutput($p['name']);?></option><?php endwhile;?></select>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                <input type="text" name="name" id="catName" required
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary outline-none">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                <select
-                    name="category_type"
-                    id="catType"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent</label>
+                <select name="parent_id" id="catParent" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm">
+                    <option value="">Root Category</option>
+                    <?php $parents=$mysqli->query("SELECT id,name,level FROM exam_categories ORDER BY level,id");
+                    while($p=$parents->fetch_assoc()):?>
+                    <option value="<?php echo $p['id'];?>">
+                        <?php echo str_repeat('— ',max(0,$p['level']-1)).sanitizeOutput($p['name']);?>
+                    </option>
+                    <?php endwhile;?>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                <select name="category_type" id="catType" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm">
                     <option value="academic">Academic</option>
                     <option value="job">Job</option>
                     <option value="general">General</option>
@@ -140,106 +147,54 @@ function renderRows($tree,$level=0){
                 </select>
             </div>
             <div id="catActiveGroup">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Active</label>
-                <select
-                    name="is_active"
-                    id="catActive"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Active</label>
+                <select name="is_active" id="catActive" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm">
                     <option value="1">Yes</option>
                     <option value="0">No</option>
                 </select>
             </div>
             <div class="flex justify-end space-x-3">
-                <button
-                    type="button"
-                    onclick="closeModal()"
-                    class="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-                <button
-                    type="submit"
-                    class="px-4 py-2 bg-shikhbo-primary text-white rounded-lg text-sm">Save</button>
+                <button type="button" onclick="closeModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-shikhbo-primary text-white rounded-lg text-sm">Save</button>
             </div>
         </form>
     </div>
 </div>
-<form id="deleteCatForm" method="POST" style="display:none;"><?php echo getCSRFTokenField();?><input type="hidden" name="action" value="delete_category"><input type="hidden" name="category_id" id="deleteCatId"></form>
+
+<form id="deleteCatForm" method="POST" style="display:none;">
+    <?php echo getCSRFTokenField();?>
+    <input type="hidden" name="action" value="delete_category">
+    <input type="hidden" name="category_id" id="deleteCatId">
+</form>
 
 <script>
-    function openAddModal() {
-        document
-            .getElementById('catModalTitle')
-            .textContent = 'Add Category';
-        document
-            .getElementById('catAction')
-            .value = 'add_category';
-        document
-            .getElementById('catId')
-            .value = '';
-        document
-            .getElementById('catName')
-            .value = '';
-        document
-            .getElementById('catParent')
-            .value = '';
-        document
-            .getElementById('catType')
-            .value = 'academic';
-        document
-            .getElementById('catActive')
-            .value = '1';
-        document
-            .getElementById('catActiveGroup')
-            .style
-            .display = 'none';
-        document
-            .getElementById('categoryModal')
-            .classList
-            .remove('hidden');
+function openAddModal() {
+    document.getElementById('catModalTitle').textContent = 'Add Category';
+    document.getElementById('catAction').value = 'add_category';
+    document.getElementById('catId').value = '';
+    document.getElementById('catName').value = '';
+    document.getElementById('catParent').value = '';
+    document.getElementById('catType').value = 'academic';
+    document.getElementById('catActive').value = '1';
+    document.getElementById('catActiveGroup').style.display = 'none';
+    document.getElementById('categoryModal').classList.remove('hidden');
+}
+function editCategory(cat) {
+    document.getElementById('catModalTitle').textContent = 'Edit Category';
+    document.getElementById('catAction').value = 'edit_category';
+    document.getElementById('catId').value = cat.id;
+    document.getElementById('catName').value = cat.name;
+    document.getElementById('catParent').value = cat.parent_id || '';
+    document.getElementById('catType').value = cat.category_type;
+    document.getElementById('catActive').value = cat.is_active;
+    document.getElementById('catActiveGroup').style.display = 'block';
+    document.getElementById('categoryModal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('categoryModal').classList.add('hidden'); }
+function deleteCategory(id) {
+    if (confirm('Delete category? Children moved up.')) {
+        document.getElementById('deleteCatId').value = id;
+        document.getElementById('deleteCatForm').submit();
     }
-    function editCategory(cat) {
-        document
-            .getElementById('catModalTitle')
-            .textContent = 'Edit Category';
-        document
-            .getElementById('catAction')
-            .value = 'edit_category';
-        document
-            .getElementById('catId')
-            .value = cat.id;
-        document
-            .getElementById('catName')
-            .value = cat.name;
-        document
-            .getElementById('catParent')
-            .value = cat.parent_id || '';
-        document
-            .getElementById('catType')
-            .value = cat.category_type;
-        document
-            .getElementById('catActive')
-            .value = cat.is_active;
-        document
-            .getElementById('catActiveGroup')
-            .style
-            .display = 'block';
-        document
-            .getElementById('categoryModal')
-            .classList
-            .remove('hidden');
-    }
-    function closeModal() {
-        document
-            .getElementById('categoryModal')
-            .classList
-            .add('hidden');
-    }
-    function deleteCategory(id) {
-        if (confirm('Delete category? Children moved up.')) {
-            document
-                .getElementById('deleteCatId')
-                .value = id;
-            document
-                .getElementById('deleteCatForm')
-                .submit();
-        }
-    }
+}
 </script>

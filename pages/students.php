@@ -72,25 +72,25 @@ $stmt->close();
 ?>
 
 <?php if (isset($error)): ?>
-    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center space-x-2">
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-4 flex items-center space-x-2">
         <i class="fa-solid fa-circle-exclamation"></i><span><?php echo sanitizeOutput($error); ?></span>
     </div>
 <?php endif; ?>
 <?php if (isset($success)): ?>
-    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-center space-x-2">
+    <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg mb-4 flex items-center space-x-2">
         <i class="fa-solid fa-circle-check"></i><span><?php echo sanitizeOutput($success); ?></span>
     </div>
 <?php endif; ?>
 
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
     <div>
-        <h1 class="text-2xl font-bold text-gray-800">Students Management</h1>
-        <p class="text-gray-500 mt-1"><?php echo number_format($totalStudents); ?> students total</p>
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Students Management</h1>
+        <p class="text-gray-500 dark:text-gray-400 mt-1"><?php echo number_format($totalStudents); ?> students total</p>
     </div>
     <form method="GET" action="index.php" class="flex flex-wrap gap-2 items-center">
         <input type="hidden" name="page" value="students">
-        <input type="text" name="search" value="<?php echo sanitizeOutput($search); ?>" placeholder="Search name/email..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary outline-none w-48">
-        <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+        <input type="text" name="search" value="<?php echo sanitizeOutput($search); ?>" placeholder="Search name/email..." class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary outline-none w-48">
+        <select name="status" class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm">
             <option value="">All Status</option>
             <option value="active" <?php echo $statusFilter==='active'?'selected':''; ?>>Active</option>
             <option value="suspended" <?php echo $statusFilter==='suspended'?'selected':''; ?>>Suspended</option>
@@ -98,52 +98,52 @@ $stmt->close();
         </select>
         <button type="submit" class="px-4 py-2 bg-shikhbo-primary text-white rounded-lg text-sm"><i class="fa-solid fa-filter mr-1"></i>Filter</button>
         <?php if ($search || $statusFilter): ?>
-            <a href="index.php?page=students" class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600">Clear</a>
+            <a href="index.php?page=students" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-300">Clear</a>
         <?php endif; ?>
     </form>
 </div>
 
 <!-- Students Table -->
-<div class="bg-white rounded-xl shadow-md overflow-hidden">
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/20 overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full">
-            <thead class="bg-gray-50">
+            <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auth</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Login</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Student</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Email</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Auth</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Last Login</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 <?php if ($students->num_rows > 0): ?>
                     <?php while ($stu = $students->fetch_assoc()): ?>
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <div class="flex items-center space-x-3">
                                     <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($stu['name']); ?>&background=4F46E5&color=fff&size=36" class="w-9 h-9 rounded-full">
                                     <div>
-                                        <p class="text-sm font-medium text-gray-800"><?php echo sanitizeOutput($stu['name']); ?></p>
-                                        <p class="text-xs text-gray-400">#<?php echo $stu['id']; ?></p>
+                                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100"><?php echo sanitizeOutput($stu['name']); ?></p>
+                                        <p class="text-xs text-gray-400 dark:text-gray-500">#<?php echo $stu['id']; ?></p>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600"><?php echo sanitizeOutput($stu['email']); ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300"><?php echo sanitizeOutput($stu['email']); ?></td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <?php if ($stu['google_login']): ?>
-                                    <span class="px-2 py-1 text-xs bg-red-50 text-red-700 rounded-full"><i class="fa-brands fa-google mr-1"></i>Google</span>
+                                    <span class="px-2 py-1 text-xs bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full"><i class="fa-brands fa-google mr-1"></i>Google</span>
                                 <?php else: ?>
-                                    <span class="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded-full"><i class="fa-solid fa-envelope mr-1"></i>Email</span>
+                                    <span class="px-2 py-1 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"><i class="fa-solid fa-envelope mr-1"></i>Email</span>
                                 <?php endif; ?>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full <?php echo $stu['status']==='active'?'text-green-800 bg-green-100':($stu['status']==='suspended'?'text-red-800 bg-red-100':'text-yellow-800 bg-yellow-100'); ?>">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full <?php echo $stu['status']==='active'?'text-green-800 bg-green-100 dark:text-green-300 dark:bg-green-900/30':($stu['status']==='suspended'?'text-red-800 bg-red-100 dark:text-red-300 dark:bg-red-900/30':'text-yellow-800 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/30'); ?>">
                                     <?php echo ucfirst($stu['status']); ?>
                                 </span>
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500"><?php echo $stu['last_login'] ? date('M j, H:i', strtotime($stu['last_login'])) : 'Never'; ?></td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"><?php echo $stu['last_login'] ? date('M j, H:i', strtotime($stu['last_login'])) : 'Never'; ?></td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm">
                                 <div class="flex items-center space-x-2">
                                     <button onclick="viewStudent(<?php echo htmlspecialchars(json_encode($stu), ENT_QUOTES, 'UTF-8'); ?>)" class="text-blue-600 hover:underline" title="View Details"><i class="fa-solid fa-eye"></i></button>
@@ -155,17 +155,17 @@ $stmt->close();
                         </tr>
                     <?php endwhile; ?>
                 <?php else: ?>
-                    <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500"><i class="fa-solid fa-user-slash text-3xl mb-2 block"></i>No students found.</td></tr>
+                    <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400"><i class="fa-solid fa-user-slash text-3xl mb-2 block"></i>No students found.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
     </div>
     <?php if ($totalPages > 1): ?>
-        <div class="px-6 py-3 border-t border-gray-200 flex items-center justify-between">
-            <p class="text-sm text-gray-600">Page <?php echo $page_num; ?> of <?php echo $totalPages; ?></p>
+        <div class="px-6 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <p class="text-sm text-gray-600 dark:text-gray-400">Page <?php echo $page_num; ?> of <?php echo $totalPages; ?></p>
             <div class="flex space-x-1">
                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                    <a href="index.php?page=students&p=<?php echo $i; ?><?php echo $search?'&search='.urlencode($search):''; ?><?php echo $statusFilter?'&status='.$statusFilter:''; ?>" class="px-3 py-1 text-sm border rounded <?php echo $i===$page_num?'bg-shikhbo-primary text-white border-shikhbo-primary':'hover:bg-gray-100'; ?>"><?php echo $i; ?></a>
+                    <a href="index.php?page=students&p=<?php echo $i; ?><?php echo $search?'&search='.urlencode($search):''; ?><?php echo $statusFilter?'&status='.$statusFilter:''; ?>" class="px-3 py-1 text-sm border rounded <?php echo $i===$page_num?'bg-shikhbo-primary text-white border-shikhbo-primary':'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300'; ?>"><?php echo $i; ?></a>
                 <?php endfor; ?>
             </div>
         </div>
@@ -175,10 +175,10 @@ $stmt->close();
 <!-- View Student Detail Modal -->
 <div id="viewStudentModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeViewModal()"></div>
-    <div class="relative bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6">
+    <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg mx-4 p-6">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-800">Student Details</h3>
-            <button onclick="closeViewModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Student Details</h3>
+            <button onclick="closeViewModal()" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
         <div id="viewStudentContent" class="space-y-3"></div>
     </div>
@@ -187,33 +187,33 @@ $stmt->close();
 <!-- Edit Student Modal -->
 <div id="editStudentModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeEditModal()"></div>
-    <div class="relative bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6">
+    <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg mx-4 p-6">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-800">Edit Student</h3>
-            <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Edit Student</h3>
+            <button onclick="closeEditModal()" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
         <form method="POST" class="space-y-4">
             <?php echo getCSRFTokenField(); ?>
             <input type="hidden" name="action" value="edit_student">
             <input type="hidden" name="student_id" id="editStudentId">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input type="text" name="name" id="editStudentName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary outline-none">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                <input type="text" name="name" id="editStudentName" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary outline-none">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" name="email" id="editStudentEmail" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary outline-none">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                <input type="email" name="email" id="editStudentEmail" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary outline-none">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select name="status" id="editStudentStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                <select name="status" id="editStudentStatus" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm">
                     <option value="active">Active</option>
                     <option value="suspended">Suspended</option>
                     <option value="inactive">Inactive</option>
                 </select>
             </div>
             <div class="flex justify-end space-x-3">
-                <button type="button" onclick="closeEditModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300">Cancel</button>
                 <button type="submit" class="px-4 py-2 bg-shikhbo-primary text-white rounded-lg text-sm">Save Changes</button>
             </div>
         </form>
@@ -233,17 +233,17 @@ function viewStudent(stu) {
     document.getElementById('viewStudentContent').innerHTML = `
         <div class="flex items-center space-x-4 mb-4">
             <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(stu.name)}&background=4F46E5&color=fff&size=64" class="w-16 h-16 rounded-full">
-            <div><p class="text-lg font-semibold">${stu.name}</p><p class="text-sm text-gray-500">#${stu.id}</p></div>
+            <div><p class="text-lg font-semibold text-gray-800 dark:text-gray-100">${stu.name}</p><p class="text-sm text-gray-500 dark:text-gray-400">#${stu.id}</p></div>
         </div>
         <div class="grid grid-cols-2 gap-3 text-sm">
-            <div><span class="text-gray-500">Email:</span><p class="font-medium">${stu.email}</p></div>
-            <div><span class="text-gray-500">Status:</span><p class="font-medium capitalize">${stu.status}</p></div>
-            <div><span class="text-gray-500">Referral:</span><p class="font-medium">${stu.referral_code || '—'}</p></div>
-            <div><span class="text-gray-500">Auth:</span><p class="font-medium">${stu.google_login == 1 ? 'Google' : 'Email'}</p></div>
-            <div><span class="text-gray-500">Device:</span><p class="font-medium">${stu.device_model || '—'}</p></div>
-            <div><span class="text-gray-500">IP:</span><p class="font-medium">${stu.ip_address || '—'}</p></div>
-            <div><span class="text-gray-500">Last Login:</span><p class="font-medium">${stu.last_login || 'Never'}</p></div>
-            <div><span class="text-gray-500">Joined:</span><p class="font-medium">${stu.created_at}</p></div>
+            <div><span class="text-gray-500 dark:text-gray-400">Email:</span><p class="font-medium text-gray-800 dark:text-gray-100">${stu.email}</p></div>
+            <div><span class="text-gray-500 dark:text-gray-400">Status:</span><p class="font-medium text-gray-800 dark:text-gray-100 capitalize">${stu.status}</p></div>
+            <div><span class="text-gray-500 dark:text-gray-400">Referral:</span><p class="font-medium text-gray-800 dark:text-gray-100">${stu.referral_code || '—'}</p></div>
+            <div><span class="text-gray-500 dark:text-gray-400">Auth:</span><p class="font-medium text-gray-800 dark:text-gray-100">${stu.google_login == 1 ? 'Google' : 'Email'}</p></div>
+            <div><span class="text-gray-500 dark:text-gray-400">Device:</span><p class="font-medium text-gray-800 dark:text-gray-100">${stu.device_model || '—'}</p></div>
+            <div><span class="text-gray-500 dark:text-gray-400">IP:</span><p class="font-medium text-gray-800 dark:text-gray-100">${stu.ip_address || '—'}</p></div>
+            <div><span class="text-gray-500 dark:text-gray-400">Last Login:</span><p class="font-medium text-gray-800 dark:text-gray-100">${stu.last_login || 'Never'}</p></div>
+            <div><span class="text-gray-500 dark:text-gray-400">Joined:</span><p class="font-medium text-gray-800 dark:text-gray-100">${stu.created_at}</p></div>
         </div>
     `;
     document.getElementById('viewStudentModal').classList.remove('hidden');

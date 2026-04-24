@@ -34,32 +34,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <div class="max-w-2xl">
-    <h1 class="text-2xl font-bold text-gray-800 mb-6">System Settings</h1>
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">System Settings</h1>
 
     <?php if (isset($error)): ?>
-        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4"><?php echo sanitizeOutput($error); ?></div>
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-4"><?php echo sanitizeOutput($error); ?></div>
     <?php endif; ?>
     <?php if (isset($success)): ?>
-        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4"><?php echo sanitizeOutput($success); ?></div>
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg mb-4"><?php echo sanitizeOutput($success); ?></div>
     <?php endif; ?>
 
     <!-- Change Password -->
-    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Change Password</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/20 p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Change Password</h3>
         <form method="POST" class="space-y-4">
             <?php echo getCSRFTokenField(); ?>
             <input type="hidden" name="action" value="change_password">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                <input type="password" name="current_password" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary focus:border-transparent outline-none">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Password</label>
+                <input type="password" name="current_password" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary focus:border-transparent outline-none">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                <input type="password" name="new_password" required minlength="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary focus:border-transparent outline-none">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
+                <input type="password" name="new_password" required minlength="8" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary focus:border-transparent outline-none">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                <input type="password" name="confirm_password" required minlength="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary focus:border-transparent outline-none">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm New Password</label>
+                <input type="password" name="confirm_password" required minlength="8" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary focus:border-transparent outline-none">
             </div>
             <button type="submit" class="px-6 py-2 bg-shikhbo-primary text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
                 Update Password
@@ -68,28 +68,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <!-- System Info -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">System Information</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/20 p-6">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">System Information</h3>
         <dl class="space-y-3">
             <div class="flex justify-between">
-                <dt class="text-sm text-gray-500">PHP Version:</dt>
-                <dd class="text-sm font-medium text-gray-800"><?php echo phpversion(); ?></dd>
+                <dt class="text-sm text-gray-500 dark:text-gray-400">PHP Version:</dt>
+                <dd class="text-sm font-medium text-gray-800 dark:text-gray-100"><?php echo phpversion(); ?></dd>
             </div>
             <div class="flex justify-between">
-                <dt class="text-sm text-gray-500">Database:</dt>
-                <dd class="text-sm font-medium text-gray-800">MySQL (Railway)</dd>
+                <dt class="text-sm text-gray-500 dark:text-gray-400">Database:</dt>
+                <dd class="text-sm font-medium text-gray-800 dark:text-gray-100">MySQL (Railway)</dd>
             </div>
             <div class="flex justify-between">
-                <dt class="text-sm text-gray-500">Session Security:</dt>
-                <dd class="text-sm font-medium text-green-600">HTTPS + HttpOnly + SameSite Strict</dd>
+                <dt class="text-sm text-gray-500 dark:text-gray-400">Session Security:</dt>
+                <dd class="text-sm font-medium text-green-600 dark:text-green-400">HTTPS + HttpOnly + SameSite Strict</dd>
             </div>
             <div class="flex justify-between">
-                <dt class="text-sm text-gray-500">CSRF Protection:</dt>
-                <dd class="text-sm font-medium text-green-600">Enabled (Synchronized Token)</dd>
+                <dt class="text-sm text-gray-500 dark:text-gray-400">CSRF Protection:</dt>
+                <dd class="text-sm font-medium text-green-600 dark:text-green-400">Enabled (Synchronized Token)</dd>
             </div>
             <div class="flex justify-between">
-                <dt class="text-sm text-gray-500">Rate Limiting:</dt>
-                <dd class="text-sm font-medium text-green-600">5 attempts / 15 min</dd>
+                <dt class="text-sm text-gray-500 dark:text-gray-400">Rate Limiting:</dt>
+                <dd class="text-sm font-medium text-green-600 dark:text-green-400">5 attempts / 15 min</dd>
             </div>
         </dl>
     </div>
