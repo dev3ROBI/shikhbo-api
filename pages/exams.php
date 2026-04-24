@@ -116,18 +116,48 @@ $activeCount = $mysqli->query("SELECT COUNT(*) as c FROM exams WHERE status='act
 $draftCount = $mysqli->query("SELECT COUNT(*) as c FROM exams WHERE status='draft'")->fetch_assoc()['c'];
 $completedCount = $mysqli->query("SELECT COUNT(*) as c FROM exams WHERE status='completed'")->fetch_assoc()['c'];
 
-$catSelectHTML = '';
-function catSelectOptions($tree, $parent=null, $level=0) {
+// ========== BUILD FULL PATHS FOR CATEGORY DROPDOWN ==========
+function buildCategoryPaths($catsById) {
+    $paths = [];
+    $cache = [];
+
+    $getPath = function($id) use ($catsById, &$cache, &$getPath) {
+        if (isset($cache[$id])) return $cache[$id];
+        if (!isset($catsById[$id])) return '';
+        $parentId = $catsById[$id]['parent_id'];
+        $name = $catsById[$id]['name'];
+
+        if ($parentId && $parentId != $id) {
+            $parentPath = $getPath($parentId);
+            $cache[$id] = ($parentPath ? $parentPath . ' → ' : '') . $name;
+        } else {
+            $cache[$id] = $name;
+        }
+        return $cache[$id];
+    };
+
+    foreach ($catsById as $id => $cat) {
+        $paths[$id] = $getPath($id);
+    }
+    return $paths;
+}
+$categoryPaths = buildCategoryPaths($catsById);
+
+// ========== UPDATED CATEGORY SELECT OPTIONS WITH FULL PATH ==========
+function catSelectOptions($tree, $paths, $parent=null, $level=0) {
     $h = '';
     foreach ($tree as $id => $cat) {
         if ($cat['parent_id'] == $parent) {
-            $h .= "<option value='{$id}'>" . str_repeat('— ', $level) . sanitizeOutput($cat['name']) . "</option>";
-            if (!empty($cat['children'])) $h .= catSelectOptions($cat['children'], $id, $level+1);
+            $display = isset($paths[$id]) ? $paths[$id] : sanitizeOutput($cat['name']);
+            $h .= "<option value='{$id}'>" . sanitizeOutput($display) . "</option>";
+            if (!empty($cat['children'])) {
+                $h .= catSelectOptions($cat['children'], $paths, $id, $level+1);
+            }
         }
     }
     return $h;
 }
-$catSelectHTML = catSelectOptions($catTree);
+$catSelectHTML = catSelectOptions($catTree, $categoryPaths);
 ?>
 
 <?php if (isset($error)): ?><div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm"><?php echo sanitizeOutput($error); ?></div><?php endif; ?>
