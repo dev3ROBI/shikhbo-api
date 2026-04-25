@@ -5,9 +5,12 @@
  * POST /api/verify_token.php
  * Header: Authorization: Bearer <token>
  * Body: {"token": "..."}
+ * 
+ * Security: Checks logged user + active user + season time + rate limit
  */
 require_once 'connection.php';
 require_once 'config.php';
+require_once __DIR__ . '/../includes/app_security.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
@@ -25,20 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-function verifyToken($token) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT user_id FROM user_tokens WHERE token = ? AND expires_at > NOW()");
-    $stmt->bind_param("s", $token);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        $stmt->close();
-        return $row['user_id'];
-    }
-    $stmt->close();
-    return null;
-}
-
+$clientType = getApiClientType();
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
@@ -51,14 +41,22 @@ if (empty($token)) {
     exit();
 }
 
-$user_id = verifyToken($token);
-if (!$user_id) {
+// Use app_security module for verification
+$securityCheck = verifyUserSecurity($conn, $token, $clientType);
+
+if (!$securityCheck['success']) {
     http_response_code(401);
-    echo json_encode(['status' => 'error', 'message' => 'Invalid or expired token', 'valid' => false]);
+    echo json_encode([
+        'status' => 'error', 
+        'message' => $securityCheck['message'],
+        'code' => $securityCheck['code'] ?? 'UNAUTHORIZED'
+    ]);
     exit();
 }
 
-$stmt = $conn->prepare("SELECT name, email, status FROM users WHERE id = ?");
+// Get user details
+$user_id = $securityCheck['user_id'];
+$stmt = $conn->prepare("SELECT name, email, status, is_active FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -72,6 +70,11 @@ echo json_encode([
         'user_id' => (int)$user_id,
         'name' => $user['name'],
         'email' => $user['email'],
-        'status' => $user['status']
+        'status' => $user['status'],
+        'is_active' => (bool)$user['is_active']
+    ],
+    'rate_info' => [
+        'remaining' => $securityCheck['remaining'],
+        'season_expires' => $securityCheck['season_expires']
     ]
 ]);
