@@ -1,17 +1,17 @@
 <?php
 /**
- * Submit exam - APP API (Requires security params)
+ * SUBMIT EXAM FOR APP
+ * Requires: uid, season, u_state
  * 
- * POST /api/submit_exam.php
+ * Usage: POST /api/submit_exam_app.php
  * Body: {"exam_id":1, "answers":[], "uid":1, "season":"__", "u_state":"1"}
  */
-require_once __DIR__ . '/../includes/app_security.php';
-require_once 'config.php';
+require_once __DIR__ . '/../includes/app_security_validation.php';
+require_once __DIR__ . '/../api/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-App-Language');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -21,43 +21,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Get POST data
 $input = json_decode(file_get_contents('php://input'), true);
 
-// Security parameters (required)
-$uid = $input['uid'] ?? $_GET['uid'] ?? null;
-$season = $input['season'] ?? $_GET['season'] ?? null;
-$u_state = $input['u_state'] ?? $_GET['u_state'] ?? null;
+// Get security parameters
+$uid = $input['uid'] ?? null;
+$season = $input['season'] ?? null;
+$u_state = $input['u_state'] ?? null;
 
-if (!$uid || !$season || !$u_state) {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'message' => 'Missing security parameters', 'code' => 'SECURITY_PARAMS_REQUIRED']);
-    exit();
-}
+// Validate security
+$security = requireAppSecurity($uid, $season, $u_state);
 
-if ($u_state != '1') {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'User is not active', 'code' => 'USER_NOT_ACTIVE']);
-    exit();
-}
-
-$season_expires = strtotime($season);
-if ($season_expires < time()) {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'Season expired', 'code' => 'SEASON_EXPIRED']);
-    exit();
-}
-
-$mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
-$mysqli->set_charset('utf8mb4');
+// Database connection
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+$conn->set_charset('utf8mb4');
 
 $examId = intval($input['exam_id'] ?? 0);
 $userId = intval($input['user_id'] ?? $uid);
 $answers = $input['answers'] ?? [];
 
-if (!$examId || !$userId || empty($answers)) {
-    echo json_encode(['status' => 'error', 'message' => 'Missing parameters']);
+if (!$examId || empty($answers)) {
+    echo json_encode(['status' => 'error', 'message' => 'Missing exam_id or answers']);
     exit;
 }
 
-$stmt = $mysqli->prepare("SELECT id, correct_answer, marks FROM questions WHERE exam_id = ?");
+// Fetch correct answers
+$stmt = $conn->prepare("SELECT id, correct_answer, marks FROM questions WHERE exam_id = ?");
 $stmt->bind_param('i', $examId);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -90,11 +76,11 @@ foreach ($answers as $ans) {
     }
 }
 
-$examInfo = $mysqli->query("SELECT total_marks, passing_percentage FROM exams WHERE id = $examId")->fetch_assoc();
+$examInfo = $conn->query("SELECT total_marks, passing_percentage FROM exams WHERE id = $examId")->fetch_assoc();
 $passingMarks = $examInfo ? ($examInfo['total_marks'] * $examInfo['passing_percentage'] / 100) : 40;
 $status = $score >= $passingMarks ? 'passed' : 'failed';
 
-$stmt = $mysqli->prepare("INSERT INTO exam_results (user_id, exam_id, score, total_marks, percentage, status, started_at, completed_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())");
+$stmt = $conn->prepare("INSERT INTO exam_results (user_id, exam_id, score, total_marks, percentage, status, started_at, completed_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())");
 $percentage = ($totalMarks > 0) ? ($score / $totalMarks) * 100 : 0;
 $stmt->bind_param('iiidds', $userId, $examId, $score, $totalMarks, $percentage, $status);
 $stmt->execute();
@@ -107,5 +93,8 @@ echo json_encode([
     'percentage' => round($percentage, 2),
     'exam_status' => $status,
     'details' => $details,
-    'security' => ['uid' => (int)$uid, 'season' => $season, 'user_active' => (bool)$u_state]
+    'user_info' => [
+        'uid' => (int)$uid,
+        'requests_remaining' => $security['remaining']
+    ]
 ]);

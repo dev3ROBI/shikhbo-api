@@ -1,17 +1,17 @@
 <?php
 /**
- * Get User Profile Data - APP API (Requires security params)
+ * GET USER PROFILE FOR APP
+ * Requires: uid, season, u_state
  * 
- * POST /api/get_user.php
+ * Usage: POST /api/get_user_app.php
  * Body: {"token":"...", "uid":1, "season":"__", "u_state":"1"}
  */
-require_once __DIR__ . '/../includes/app_security.php';
-require_once 'config.php';
+require_once __DIR__ . '/../includes/app_security_validation.php';
+require_once __DIR__ . '/../api/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, Accept-Language, X-App-Language');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -24,46 +24,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-function getClientLanguage() {
-    $supported = ['en', 'bn'];
-    $default = 'en';
-    if (isset($_SERVER['HTTP_X_APP_LANGUAGE'])) {
-        $lang = substr($_SERVER['HTTP_X_APP_LANGUAGE'], 0, 2);
-        return in_array($lang, $supported) ? $lang : $default;
-    }
-    return $default;
-}
-
-$lang = getClientLanguage();
+// Get POST data
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-$token = $data['token'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
-$token = str_replace('Bearer ', '', $token);
-
-// Security parameters
+// Get security parameters
 $uid = $data['uid'] ?? null;
 $season = $data['season'] ?? null;
 $u_state = $data['u_state'] ?? null;
 
-if (!$uid || !$season || !$u_state) {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'message' => 'Missing security parameters', 'code' => 'SECURITY_PARAMS_REQUIRED']);
-    exit();
-}
+// Validate security
+$security = requireAppSecurity($uid, $season, $u_state);
 
-if ($u_state != '1') {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'User is not active', 'code' => 'USER_NOT_ACTIVE']);
-    exit();
-}
-
-$season_expires = strtotime($season);
-if ($season_expires < time()) {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'Season expired', 'code' => 'SEASON_EXPIRED']);
-    exit();
-}
+$token = $data['token'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+$token = str_replace('Bearer ', '', $token);
 
 if (empty($token)) {
     http_response_code(401);
@@ -71,27 +45,30 @@ if (empty($token)) {
     exit();
 }
 
+// Database connection
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 $conn->set_charset('utf8mb4');
 
+// Verify token
 $stmt = $conn->prepare("SELECT user_id FROM user_tokens WHERE token = ? AND expires_at > NOW()");
 $stmt->bind_param("s", $token);
 $stmt->execute();
 $result = $stmt->get_result();
-$user_id = null;
+$tokenUserId = null;
 if ($row = $result->fetch_assoc()) {
-    $user_id = $row['user_id'];
+    $tokenUserId = $row['user_id'];
 }
 $stmt->close();
 
-if (!$user_id) {
+if (!$tokenUserId) {
     http_response_code(401);
     echo json_encode(['status' => 'error', 'message' => 'Invalid or expired token']);
     exit();
 }
 
+// Get user profile
 $stmt = $conn->prepare("SELECT id, name, email, profile_image, referral_code, login_method, language, tagline, streak, member_since, is_premium, status, created_at FROM users WHERE id = ?");
-$stmt->bind_param("i", $user_id);
+$stmt->bind_param("i", $tokenUserId);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -113,11 +90,13 @@ echo json_encode([
         'profile_image' => $user['profile_image'] ?? '',
         'referral_code' => $user['referral_code'] ?? '',
         'login_method' => $user['login_method'] ?? 'email',
-        'language' => $user['language'] ?? $lang,
         'tagline' => $user['tagline'] ?? '',
         'streak' => (int)$user['streak'],
         'member_since' => $user['member_since'] ?? date('Y-m-d', strtotime($user['created_at'])),
         'is_premium' => (bool)$user['is_premium']
     ],
-    'security' => ['uid' => (int)$uid, 'season' => $season, 'user_active' => (bool)$u_state]
+    'user_info' => [
+        'uid' => (int)$uid,
+        'requests_remaining' => $security['remaining']
+    ]
 ]);

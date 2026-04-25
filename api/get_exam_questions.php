@@ -1,11 +1,51 @@
 <?php
+/**
+ * Get exam questions - APP API (Requires security params)
+ * 
+ * GET /api/get_exam_questions.php?exam_id=1&uid=1&season=__&u_state=1
+ */
+require_once __DIR__ . '/../includes/app_security.php';
 require_once 'config.php';
 
 header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-App-Language');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Security parameters (required)
+$uid = $_GET['uid'] ?? null;
+$season = $_GET['season'] ?? null;
+$u_state = $_GET['u_state'] ?? null;
+
+if (!$uid || !$season || !$u_state) {
+    http_response_code(401);
+    echo json_encode(['status' => 'error', 'message' => 'Missing security parameters', 'code' => 'SECURITY_PARAMS_REQUIRED']);
+    exit();
+}
+
+if ($u_state != '1') {
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'User is not active', 'code' => 'USER_NOT_ACTIVE']);
+    exit();
+}
+
+$season_expires = strtotime($season);
+if ($season_expires < time()) {
+    http_response_code(403);
+    echo json_encode(['status' => 'error', 'message' => 'Season expired', 'code' => 'SEASON_EXPIRED']);
+    exit();
+}
 
 $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 if ($mysqli->connect_error) {
-    die(json_encode(['status'=>'error','message'=>'DB connection failed']));
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Database connection failed']);
+    exit;
 }
 $mysqli->set_charset('utf8mb4');
 
@@ -15,7 +55,7 @@ $perPage = intval($_GET['per_page'] ?? 25);
 $seed = intval($_GET['seed'] ?? 0);
 
 if (!$examId) {
-    echo json_encode(['status'=>'error','message'=>'exam_id required']);
+    echo json_encode(['status' => 'error', 'message' => 'exam_id required']);
     exit;
 }
 
@@ -27,7 +67,6 @@ $countStmt->close();
 
 $totalPages = ceil($total / $perPage);
 $offset = ($page - 1) * $perPage;
-
 $order = $seed ? "ORDER BY RAND($seed)" : "ORDER BY RAND()";
 
 $stmt = $mysqli->prepare("SELECT id, question_text, option_a, option_b, option_c, option_d, marks FROM questions WHERE exam_id = ? $order LIMIT ? OFFSET ?");
@@ -47,5 +86,6 @@ echo json_encode([
     'page' => $page,
     'per_page' => $perPage,
     'total_pages' => $totalPages,
-    'questions' => $questions
+    'questions' => $questions,
+    'security' => ['uid' => (int)$uid, 'season' => $season, 'user_active' => (bool)$u_state]
 ]);

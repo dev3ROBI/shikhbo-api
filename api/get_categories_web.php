@@ -1,11 +1,10 @@
 <?php
 /**
- * GET CATEGORIES FOR APP
- * Requires: uid, season, u_state
+ * GET CATEGORIES FOR WEB/ADMIN PANEL
+ * No security required - for web and admin panel
  * 
- * Usage: /api/get_categories_app.php?uid=1&season=2024-01-01 12:00:00&u_state=1
+ * Usage: /api/get_categories_web.php
  */
-require_once __DIR__ . '/../includes/app_security_validation.php';
 require_once __DIR__ . '/../api/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -17,15 +16,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Get security parameters
-$uid = $_GET['uid'] ?? null;
-$season = $_GET['season'] ?? null;
-$u_state = $_GET['u_state'] ?? null;
-
-// Validate security
-$security = requireAppSecurity($uid, $season, $u_state);
-
-// Database connection
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 $conn->set_charset('utf8mb4');
 
@@ -81,10 +71,5 @@ if ($parentId > 0) {
 echo json_encode([
     'status' => 'success',
     'categories' => $categories,
-    'user_info' => [
-        'uid' => (int)$uid,
-        'name' => $security['user']['name'] ?? '',
-        'season' => $season,
-        'requests_remaining' => $security['remaining']
-    ]
+    'source' => 'web'
 ]);

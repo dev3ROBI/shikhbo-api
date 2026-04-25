@@ -1,53 +1,33 @@
 <?php
 /**
- * Get exams by category - APP API (Requires security params)
+ * GET EXAMS BY CATEGORY FOR APP
+ * Requires: uid, season, u_state
  * 
- * GET /api/get_exams_by_category.php?category_id=1&uid=1&season=__&u_state=1
+ * Usage: /api/get_exams_by_category_app.php?category_id=1&uid=1&season=2024-01-01 12:00:00&u_state=1
  */
-require_once __DIR__ . '/../includes/app_security.php';
-require_once 'config.php';
+require_once __DIR__ . '/../includes/app_security_validation.php';
+require_once __DIR__ . '/../api/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-App-Language');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
-// Security parameters (required)
+// Get security parameters
 $uid = $_GET['uid'] ?? null;
 $season = $_GET['season'] ?? null;
 $u_state = $_GET['u_state'] ?? null;
 
-if (!$uid || !$season || !$u_state) {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'message' => 'Missing security parameters', 'code' => 'SECURITY_PARAMS_REQUIRED']);
-    exit();
-}
+// Validate security
+$security = requireAppSecurity($uid, $season, $u_state);
 
-if ($u_state != '1') {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'User is not active', 'code' => 'USER_NOT_ACTIVE']);
-    exit();
-}
-
-$season_expires = strtotime($season);
-if ($season_expires < time()) {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'Season expired', 'code' => 'SEASON_EXPIRED']);
-    exit();
-}
-
-$mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
-if ($mysqli->connect_error) {
-    http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Database connection failed']);
-    exit;
-}
-$mysqli->set_charset('utf8mb4');
+// Database connection
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+$conn->set_charset('utf8mb4');
 
 $categoryId = intval($_GET['category_id'] ?? 0);
 $direct = isset($_GET['direct']) ? ($_GET['direct'] === '1' || $_GET['direct'] === 'true') : true;
@@ -58,7 +38,7 @@ if ($categoryId <= 0) {
 }
 
 if ($direct) {
-    $stmt = $mysqli->prepare("
+    $stmt = $conn->prepare("
         SELECT e.id, e.title, e.duration_minutes, e.total_marks, e.passing_percentage,
                e.status, e.is_free, c.name AS category_name
         FROM exams e
@@ -71,24 +51,24 @@ if ($direct) {
     $exams = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 } else {
-    function getAllChildCategoryIds($mysqli, $parentId, &$ids = []) {
+    function getAllChildCategoryIds($conn, $parentId, &$ids = []) {
         $ids[] = $parentId;
-        $stmt = $mysqli->prepare("SELECT id FROM exam_categories WHERE parent_id = ? AND is_active = 1");
+        $stmt = $conn->prepare("SELECT id FROM exam_categories WHERE parent_id = ? AND is_active = 1");
         $stmt->bind_param('i', $parentId);
         $stmt->execute();
         $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
-            getAllChildCategoryIds($mysqli, $row['id'], $ids);
+            getAllChildCategoryIds($conn, $row['id'], $ids);
         }
         $stmt->close();
         return $ids;
     }
 
-    $categoryIds = getAllChildCategoryIds($mysqli, $categoryId);
+    $categoryIds = getAllChildCategoryIds($conn, $categoryId);
     $placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
     $types = str_repeat('i', count($categoryIds));
 
-    $stmt = $mysqli->prepare("
+    $stmt = $conn->prepare("
         SELECT e.id, e.title, e.duration_minutes, e.total_marks, e.passing_percentage,
                e.status, e.is_free, c.name AS category_name
         FROM exams e
@@ -105,5 +85,8 @@ if ($direct) {
 echo json_encode([
     'status' => 'success',
     'exams' => $exams ?: [],
-    'security' => ['uid' => (int)$uid, 'season' => $season, 'user_active' => (bool)$u_state]
+    'user_info' => [
+        'uid' => (int)$uid,
+        'requests_remaining' => $security['remaining']
+    ]
 ]);

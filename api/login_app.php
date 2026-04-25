@@ -1,18 +1,17 @@
 <?php
 /**
- * App Login API - For Android App
- * Requires: user_id, user_season, user_active
+ * LOGIN FOR APP
+ * Returns user data with security params for subsequent API calls
  * 
- * POST /api/login_app.php
+ * Usage: POST /api/login_app.php
+ * Body: {"email":"...", "password":"...", "device_info":{...}}
  */
-require_once 'connection.php';
-require_once 'config.php';
-require_once __DIR__ . '/../includes/app_security.php';
+require_once __DIR__ . '/../api/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, Accept-Language, X-App-Language');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-App-Language');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -25,129 +24,136 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-function getMessage($key, $language = 'en') {
-    $messages = [
-        'en' => ['login_successful' => "Login successful"],
-        'bn' => ['login_successful' => "লগইন সফল"]
-    ];
-    return $messages[$language][$key] ?? $messages['en'][$key];
-}
-
-function getClientLanguage() {
-    $supported_languages = ['en', 'bn'];
-    $default_language = 'en';
-    if (isset($_SERVER['HTTP_X_APP_LANGUAGE'])) {
-        $app_lang = substr($_SERVER['HTTP_X_APP_LANGUAGE'], 0, 2);
-        if (in_array($app_lang, $supported_languages)) {
-            return $app_lang;
-        }
-    }
-    return $default_language;
-}
-
-$client_language = getClientLanguage();
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
 if (!$data) {
-    http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Invalid JSON data']);
-    exit();
+    exit;
 }
 
 $email = trim($data['email'] ?? '');
 $password = trim($data['password'] ?? '');
-$user_id = $data['user_id'] ?? null;
-$user_season = $data['user_season'] ?? null;
-$user_active = $data['user_active'] ?? null;
-$device_info = $data['device_info'] ?? [];
-
-$device_id = $device_info['device_id'] ?? '';
-$device_model = $device_info['device_model'] ?? '';
-$os_version = $device_info['os_version'] ?? '';
-$app_version = $device_info['app_version'] ?? '';
-$ip = $_SERVER['REMOTE_ADDR'];
+$deviceInfo = $data['device_info'] ?? [];
 
 if (empty($email) || empty($password)) {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Email and password required']);
-    exit();
+    exit;
 }
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Invalid email format']);
-    exit();
+    exit;
 }
 
-$stmt = $conn->prepare("SELECT id, name, email, password, status FROM users WHERE email = ?");
-$stmt->bind_param("s", $email);
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+$conn->set_charset('utf8mb4');
+
+// Check rate limit
+$ip = $_SERVER['REMOTE_ADDR'];
+$timeWindow = date('Y-m-d H:i:s', strtotime('-15 minutes'));
+
+$stmt = $conn->prepare("SELECT COUNT(*) as attempt_count FROM login_attempts WHERE (email = ? OR ip_address = ?) AND attempt_time > ? AND success = 0");
+$stmt->bind_param('sss', $email, $ip, $timeWindow);
+$stmt->execute();
+$attemptCount = $stmt->get_result()->fetch_assoc()['attempt_count'];
+$stmt->close();
+
+if ($attemptCount >= 5) {
+    echo json_encode(['status' => 'error', 'message' => 'Too many login attempts. Please try again later.']);
+    exit;
+}
+
+// Get user
+$stmt = $conn->prepare("SELECT id, name, email, password, status, is_active, profile_image FROM users WHERE email = ?");
+$stmt->bind_param('s', $email);
 $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows === 0) {
-    http_response_code(401);
+    $stmt->close();
     echo json_encode(['status' => 'error', 'message' => 'User not found']);
-    exit();
+    exit;
 }
 
 $user = $result->fetch_assoc();
 $stmt->close();
 
 if ($user['status'] === 'suspended') {
-    http_response_code(403);
     echo json_encode(['status' => 'error', 'message' => 'Account is suspended']);
-    exit();
+    exit;
+}
+
+if ($user['status'] !== 'active' || $user['is_active'] != 1) {
+    echo json_encode(['status' => 'error', 'message' => 'Account is not active']);
+    exit;
 }
 
 if (empty($user['password']) || !password_verify($password, $user['password'])) {
-    http_response_code(401);
+    $stmt = $conn->prepare("INSERT INTO login_attempts (email, ip_address, success, attempt_time) VALUES (?, ?, 0, NOW())");
+    $stmt->bind_param('ss', $email, $ip);
+    $stmt->execute();
+    $stmt->close();
     echo json_encode(['status' => 'error', 'message' => 'Invalid password']);
-    exit();
+    exit;
 }
 
+// Generate token
 $token = bin2hex(random_bytes(32));
-$expires_at = date('Y-m-d H:i:s', strtotime('+30 days'));
+$expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
 
 $stmt = $conn->prepare("INSERT INTO user_tokens (user_id, token, expires_at, created_at) VALUES (?, ?, ?, NOW())");
-$stmt->bind_param("iss", $user['id'], $token, $expires_at);
+$stmt->bind_param('iss', $user['id'], $token, $expiresAt);
 $stmt->execute();
 $stmt->close();
 
-$updateStmt = $conn->prepare("UPDATE users SET last_login = NOW(), device_id = ?, ip_address = ?, device_model = ?, os_version = ?, app_version = ? WHERE id = ?");
-$updateStmt->bind_param("sssssi", $device_id, $ip, $device_model, $os_version, $app_version, $user['id']);
+// Generate season (expires in 3 hours)
+$season = date('Y-m-d H:i:s', strtotime('+3 hours'));
+
+// Update last login
+$deviceId = $deviceInfo['device_id'] ?? '';
+$deviceModel = $deviceInfo['device_model'] ?? '';
+$osVersion = $deviceInfo['os_version'] ?? '';
+$appVersion = $deviceInfo['app_version'] ?? '';
+
+$updateStmt = $conn->prepare("UPDATE users SET last_login = NOW(), device_id = ?, device_model = ?, os_version = ?, app_version = ? WHERE id = ?");
+$updateStmt->bind_param('ssssi', $deviceId, $deviceModel, $osVersion, $appVersion, $user['id']);
 $updateStmt->execute();
 $updateStmt->close();
 
-$profile_image = $user['profile_image'] ?? '';
-$referral_code = '';
+// Log successful attempt
+$stmt = $conn->prepare("INSERT INTO login_attempts (email, ip_address, success, attempt_time) VALUES (?, ?, 1, NOW())");
+$stmt->bind_param('ss', $email, $ip);
+$stmt->execute();
+$stmt->close();
 
+// Get referral code
+$referralCode = '';
 $refStmt = $conn->prepare("SELECT referral_code FROM users WHERE id = ?");
-$refStmt->bind_param("i", $user['id']);
+$refStmt->bind_param('i', $user['id']);
 $refStmt->execute();
 $refResult = $refStmt->get_result();
 if ($refRow = $refResult->fetch_assoc()) {
-    $referral_code = $refRow['referral_code'] ?? '';
+    $referralCode = $refRow['referral_code'] ?? '';
 }
 $refStmt->close();
 
-$season = date('Y-m-d H:i:s', strtotime('+3 hours'));
-
-$response = [
-    "status" => "success",
-    "message" => getMessage('login_successful', $client_language),
-    "token" => $token,
-    "user_id" => (int)$user['id'],
-    "name" => $user['name'],
-    "email" => $user['email'],
-    "profile_image" => $profile_image ?: "",
-    "referral_code" => $referral_code ?: "",
-    "login_method" => "email",
-    "user_data" => [
-        "user_id" => (int)$user['id'],
-        "user_season" => $season,
-        "user_active" => true
-    ]
-];
-
-echo json_encode($response);
+echo json_encode([
+    'status' => 'success',
+    'message' => 'Login successful',
+    'token' => $token,
+    'user_id' => (int)$user['id'],
+    'name' => $user['name'],
+    'email' => $user['email'],
+    'profile_image' => $user['profile_image'] ?? '',
+    'referral_code' => $referralCode ?: '',
+    'login_method' => 'email',
+    'user_data' => [
+        'user_id' => (int)$user['id'],
+        'user_season' => $season,
+        'user_active' => 1
+    ],
+    'source' => 'app'
+]);
