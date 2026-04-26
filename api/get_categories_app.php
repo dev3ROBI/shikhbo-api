@@ -49,9 +49,9 @@ if ($parentId > 0) {
     $stmt->close();
 } else {
     $stmt = $conn->prepare("
-        SELECT id, name, slug, parent_id, level, icon, category_type, is_active
+        SELECT id, name, slug, parent_id, level, icon, category_type
         FROM exam_categories
-        WHERE is_active = 1 AND parent_id = 0
+        WHERE parent_id = 0
         ORDER BY sort_order, id
     ");
     $stmt->execute();
@@ -59,11 +59,10 @@ if ($parentId > 0) {
     
     $categories = [];
     while ($row = $result->fetch_assoc()) {
-        $row['is_active'] = (int)$row['is_active'];
         $childStmt = $conn->prepare("
-            SELECT id, name, slug, parent_id, level, icon, category_type, is_active
+            SELECT id, name, slug, parent_id, level, icon, category_type
             FROM exam_categories
-            WHERE parent_id = ? AND is_active = 1
+            WHERE parent_id = ?
             ORDER BY sort_order, id
         ");
         $childStmt->bind_param('i', $row['id']);
@@ -71,7 +70,6 @@ if ($parentId > 0) {
         $childResult = $childStmt->get_result();
         $children = [];
         while ($child = $childResult->fetch_assoc()) {
-            $child['is_active'] = (int)$child['is_active'];
             $children[] = $child;
         }
         $childStmt->close();
