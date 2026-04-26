@@ -45,9 +45,7 @@ if (empty($token)) {
     exit();
 }
 
-// Database connection
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
-$conn->set_charset('utf8mb4');
+$conn = getAppSecurityConn();
 
 // Verify token
 $stmt = $conn->prepare("SELECT user_id FROM user_tokens WHERE token = ? AND expires_at > NOW()");

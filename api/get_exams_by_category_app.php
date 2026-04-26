@@ -24,10 +24,7 @@ $u_state = $_GET['u_state'] ?? null;
 
 // Validate security
 $security = requireAppSecurity($uid, $season, $u_state);
-
-// Database connection
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
-$conn->set_charset('utf8mb4');
+$conn = getAppSecurityConn();
 
 $categoryId = intval($_GET['category_id'] ?? 0);
 $direct = isset($_GET['direct']) ? ($_GET['direct'] === '1' || $_GET['direct'] === 'true') : true;

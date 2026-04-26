@@ -31,6 +31,7 @@ $season = $input['season'] ?? null;
 $u_state = $input['u_state'] ?? null;
 
 $security = requireAppSecurity($uid, $season, $u_state);
+$conn = getAppSecurityConn();
 
 $token = trim($input['token'] ?? '');
 $name = trim($input['name'] ?? '');
@@ -52,7 +53,7 @@ if (!preg_match('/^[\p{L}\s.\'-]+$/u', $name) || mb_strlen($name) < 2 || mb_strl
     exit;
 }
 
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+$conn = getAppSecurityConn();
 $conn->set_charset('utf8mb4');
 
 $tokenStmt = $conn->prepare("SELECT user_id FROM user_tokens WHERE token = ? LIMIT 1");

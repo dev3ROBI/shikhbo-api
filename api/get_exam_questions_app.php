@@ -24,10 +24,7 @@ $u_state = $_GET['u_state'] ?? null;
 
 // Validate security
 $security = requireAppSecurity($uid, $season, $u_state);
-
-// Database connection
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
-$conn->set_charset('utf8mb4');
+$conn = getAppSecurityConn();
 
 $examId = intval($_GET['exam_id'] ?? 0);
 $page = max(1, intval($_GET['page'] ?? 1));

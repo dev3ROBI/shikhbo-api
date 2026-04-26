@@ -39,8 +39,7 @@ if (empty($token)) {
     exit;
 }
 
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
-$conn->set_charset('utf8mb4');
+$conn = getAppSecurityConn();
 
 $stmt = $conn->prepare("DELETE FROM user_tokens WHERE token = ?");
 $stmt->bind_param("s", $token);

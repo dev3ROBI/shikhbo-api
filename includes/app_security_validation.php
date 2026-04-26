@@ -6,13 +6,24 @@
  * Required: uid (user ID), season (timestamp), u_state (active state)
  */
 
-require_once __DIR__ . '/config.php';
+// Single shared connection
+$app_security_conn = null;
+
+function getAppSecurityConn() {
+    global $app_security_conn;
+    if ($app_security_conn === null) {
+        require_once __DIR__ . '/config.php';
+        $app_security_conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+        $app_security_conn->set_charset('utf8mb4');
+    }
+    return $app_security_conn;
+}
 
 // =======================
 // VALIDATE APP SECURITY
 // =======================
 function validateAppSecurity($uid, $season, $u_state) {
-    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+    $conn = getAppSecurityConn();
     
     if ($conn->connect_error) {
         return [

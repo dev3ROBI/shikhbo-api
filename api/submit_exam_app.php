@@ -28,10 +28,7 @@ $u_state = $input['u_state'] ?? null;
 
 // Validate security
 $security = requireAppSecurity($uid, $season, $u_state);
-
-// Database connection
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
-$conn->set_charset('utf8mb4');
+$conn = getAppSecurityConn();
 
 $examId = intval($input['exam_id'] ?? 0);
 $userId = intval($input['user_id'] ?? $uid);
