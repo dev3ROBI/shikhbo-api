@@ -71,8 +71,8 @@ if ($examId <= 0):
 
         try {
             const [catRes, examRes] = await Promise.all([
-                fetch(`/api/get_categories.php?parent_id=${catId}`),
-                fetch(`/api/get_exams_by_category.php?category_id=${catId}&direct=1`)
+                fetch(`/api/get_categories_web.php?parent_id=${catId}`),
+                fetch(`/api/get_exams_by_category_web.php?category_id=${catId}&direct=1`)
             ]);
             const catData = await catRes.json();
             const examData = await examRes.json();
@@ -138,8 +138,8 @@ if ($examId <= 0):
 
         try {
             const [catRes, examRes] = await Promise.all([
-                fetch(`/api/get_categories.php?parent_id=${catId}`),
-                fetch(`/api/get_exams_by_category.php?category_id=${catId}&direct=1`)
+                fetch(`/api/get_categories_web.php?parent_id=${catId}`),
+                fetch(`/api/get_exams_by_category_web.php?category_id=${catId}&direct=1`)
             ]);
             const catData = await catRes.json();
             const examData = await examRes.json();
@@ -279,7 +279,7 @@ async function loadAllQuestions(){
     const container = document.getElementById('questionsContainer');
     container.innerHTML = '<div class="text-center py-16"><div class="inline-block w-12 h-12 border-4 border-shikhbo-primary dark:border-indigo-400 border-t-transparent rounded-full animate-spin mb-4"></div><p class="text-gray-500 dark:text-gray-400">Loading questions...</p></div>';
     try {
-        const res = await fetch(`/api/get_exam_questions.php?exam_id=${examId}&page=1&per_page=9999&seed=${Date.now()}`);
+        const res = await fetch(`/api/get_exam_questions_web.php?exam_id=${examId}&page=1&per_page=9999&seed=${Date.now()}`);
         const data = await res.json();
         if(data.status==='success' && Array.isArray(data.questions)){
             questionsData = data.questions;
@@ -453,7 +453,7 @@ function showResultModal(result){
 async function submitExam(){
     const answerArray = questionsData.map(q=>({question_id: q.id, selected_option: answers[q.id]||''}));
     try {
-        const res = await fetch('/api/submit_exam.php', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({exam_id:examId,user_id:<?php echo $_SESSION['admin_id']??1; ?>,answers:answerArray})});
+        const res = await fetch('/api/submit_exam_web.php', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({exam_id:examId,user_id:<?php echo $_SESSION['admin_id']??1; ?>,answers:answerArray})});
         const result = await res.json();
         if(result.status==='success'){
             localStorage.removeItem(STORAGE_KEY);

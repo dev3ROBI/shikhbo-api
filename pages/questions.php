@@ -303,7 +303,7 @@ function toggleCatNode(header, catId) {
         if (chevron) chevron.style.transform = 'rotate(90deg)';
     }
     if (examsDiv && examsDiv.querySelector('.text-xs.text-gray-400, .text-xs.dark\\:text-gray-500')) {
-        fetch(`/api/get_exams_by_category.php?category_id=${catId}&direct=1`).then(r => r.json()).then(data => {
+        fetch(`/api/get_exams_by_category_web.php?category_id=${catId}&direct=1`).then(r => r.json()).then(data => {
             if (data.status === 'success' && data.exams.length > 0) {
                 examsDiv.innerHTML = data.exams.map(e => `<a href="index.php?page=questions&exam_id=${e.id}" class="block text-xs py-2 px-3 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-gray-600 dark:text-gray-300 transition-colors"><i class="fa-solid fa-file-alt mr-2 text-gray-400"></i>${e.title}</a>`).join('');
             } else {

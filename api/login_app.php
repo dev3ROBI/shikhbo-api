@@ -112,6 +112,15 @@ $stmt->close();
 // Generate season (expires in 3 hours)
 $season = date('Y-m-d H:i:s', strtotime('+3 hours'));
 
+// Get actual user active status from database
+$statusStmt = $conn->prepare("SELECT status, is_active FROM users WHERE id = ?");
+$statusStmt->bind_param('i', $user['id']);
+$statusStmt->execute();
+$statusResult = $statusStmt->get_result();
+$statusRow = $statusResult->fetch_assoc();
+$statusStmt->close();
+$userActive = ($statusRow && $statusRow['status'] === 'active' && $statusRow['is_active'] == 1) ? 1 : 0;
+
 // Update last login
 $deviceId = $deviceInfo['device_id'] ?? '';
 $deviceModel = $deviceInfo['device_model'] ?? '';
@@ -153,7 +162,7 @@ echo json_encode([
     'user_data' => [
         'user_id' => (int)$user['id'],
         'user_season' => $season,
-        'user_active' => 1
+        'user_active' => $userActive
     ],
     'source' => 'app'
 ]);

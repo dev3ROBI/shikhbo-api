@@ -284,13 +284,18 @@ try {
     
     $stmt->close();
 
+    // Generate season for app security (expires in 3 hours)
+    $season = date('Y-m-d H:i:s', strtotime('+3 hours'));
+
     // Get complete user data for response
-    $stmt = $conn->prepare("SELECT name, email, referral_code, profile_image FROM users WHERE id = ?");
+    $stmt = $conn->prepare("SELECT name, email, referral_code, profile_image, status, is_active FROM users WHERE id = ?");
     $stmt->bind_param("i", $uid);
     $stmt->execute();
     $userResult = $stmt->get_result();
     $userData = $userResult->fetch_assoc();
     $stmt->close();
+
+    $userActive = ($userData && $userData['status'] === 'active' && $userData['is_active'] == 1) ? 1 : 0;
 
     $response = [
         'status'=>'success',
@@ -299,9 +304,14 @@ try {
         'token'=>$tok,
         'email'=>$userData['email'],
         'name'=>$userData['name'],
-        'referral_code'=>$userData['referral_code'],
+        'referral_code'=>$userData['referral_code'] ?: '',
         'profile_image'=>$userData['profile_image'] ?: '',
-        'login_method'=>'google'
+        'login_method'=>'google',
+        'user_data' => [
+            'user_id' => (int)$uid,
+            'user_season' => $season,
+            'user_active' => $userActive
+        ]
     ];
 
     debug_log("Google login successful for user ID: " . $uid);
