@@ -12,7 +12,7 @@ $app_security_conn = null;
 function getAppSecurityConn() {
     global $app_security_conn;
     if ($app_security_conn === null) {
-        require_once __DIR__ . '/config.php';
+        require_once __DIR__ . '/../api/config.php';
         $app_security_conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
         $app_security_conn->set_charset('utf8mb4');
     }
