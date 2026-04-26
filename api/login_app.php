@@ -66,8 +66,14 @@ if ($attemptCount >= 5) {
     exit;
 }
 
-// Get user
-$stmt = $conn->prepare("SELECT id, name, email, password, status, is_active, profile_image FROM users WHERE email = ?");
+// Get user - handle case where is_active column might not exist
+$isActiveColumn = "";
+$checkCol = $conn->query("SHOW COLUMNS FROM users LIKE 'is_active'");
+if ($checkCol->num_rows > 0) {
+    $isActiveColumn = ", is_active";
+}
+
+$stmt = $conn->prepare("SELECT id, name, email, password, status" . $isActiveColumn . ", profile_image FROM users WHERE email = ?");
 $stmt->bind_param('s', $email);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -86,7 +92,12 @@ if ($user['status'] === 'suspended') {
     exit;
 }
 
-if ($user['status'] !== 'active' || $user['is_active'] != 1) {
+$isActiveCheck = true;
+if (!empty($isActiveColumn) && isset($user['is_active']) && $user['is_active'] != 1) {
+    $isActiveCheck = false;
+}
+
+if ($user['status'] !== 'active' || !$isActiveCheck) {
     echo json_encode(['status' => 'error', 'message' => 'Account is not active']);
     exit;
 }

@@ -54,6 +54,12 @@ CREATE TABLE IF NOT EXISTS users (
 // AUTO ADD MISSING COLUMNS (MIGRATION)
 // =======================
 $columns = [
+    "is_active TINYINT(1) DEFAULT 1",
+    "language VARCHAR(10) DEFAULT 'en'",
+    "tagline VARCHAR(255) DEFAULT NULL",
+    "streak INT DEFAULT 0",
+    "member_since DATE DEFAULT NULL",
+    "is_premium TINYINT(1) DEFAULT 0",
     "google_id VARCHAR(191) NULL",
     "device_id VARCHAR(191) NULL",
     "ip_address VARCHAR(64) NULL",
