@@ -6,7 +6,7 @@
  * Access: /api/migrate_users.php
  */
 
-require_once __DIR__ . '/api/config.php';
+require_once __DIR__ . '/../api/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 

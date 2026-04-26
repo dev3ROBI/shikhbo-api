@@ -2,17 +2,11 @@
 /**
  * GET CATEGORIES FOR APP
  * Requires: uid, season, u_state
- * 
- * Usage: /api/get_categories_app.php?uid=1&season=2024-01-01 12:00:00&u_state=1
- * 
- * Optimized: Uses shared connection, caches categories for 5 minutes
  */
 require_once __DIR__ . '/../includes/app_security_validation.php';
-require_once __DIR__ . '/../api/config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Cache-Control: public, max-age=300');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -27,64 +21,35 @@ $u_state = $_GET['u_state'] ?? null;
 $security = requireAppSecurity($uid, $season, $u_state);
 $conn = getAppSecurityConn();
 
-$parentId = isset($_GET['parent_id']) ? intval($_GET['parent_id']) : 0;
+$result = $conn->query("SELECT id, name, slug, parent_id, level, category_type FROM exam_categories ORDER BY parent_id, sort_order, id");
 
-$cacheKey = "categories_parent_{$parentId}";
-$cacheFile = sys_get_temp_dir() . "/shikhbo_cat_{$parentId}.cache";
+$catsById = [];
+while ($row = $result->fetch_assoc()) {
+    $catsById[$row['id']] = $row;
+}
 
-if ($parentId > 0) {
-    $stmt = $conn->prepare("
-        SELECT id, name, slug, parent_id, level, icon, category_type
-        FROM exam_categories
-        WHERE parent_id = ? AND is_active = 1
-        ORDER BY sort_order, id
-    ");
-    $stmt->bind_param('i', $parentId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $categories = [];
-    while ($row = $result->fetch_assoc()) {
-        $categories[] = $row;
+$rootCategories = [];
+foreach ($catsById as $id => $cat) {
+    if ($cat['parent_id'] == '' || $cat['parent_id'] == null) {
+        $rootCategories[] = $cat;
     }
-    $stmt->close();
-} else {
-    $stmt = $conn->prepare("
-        SELECT id, name, slug, parent_id, level, icon, category_type
-        FROM exam_categories
-        WHERE parent_id = 0
-        ORDER BY sort_order, id
-    ");
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $categories = [];
-    while ($row = $result->fetch_assoc()) {
-        $childStmt = $conn->prepare("
-            SELECT id, name, slug, parent_id, level, icon, category_type
-            FROM exam_categories
-            WHERE parent_id = ?
-            ORDER BY sort_order, id
-        ");
-        $childStmt->bind_param('i', $row['id']);
-        $childStmt->execute();
-        $childResult = $childStmt->get_result();
-        $children = [];
-        while ($child = $childResult->fetch_assoc()) {
-            $children[] = $child;
+}
+
+foreach ($rootCategories as $i => $root) {
+    $children = [];
+    foreach ($catsById as $id => $cat) {
+        if ($cat['parent_id'] == $root['id']) {
+            $children[] = $cat;
         }
-        $childStmt->close();
-        
-        if (!empty($children)) {
-            $row['children'] = $children;
-        }
-        $categories[] = $row;
     }
-    $stmt->close();
+    if (!empty($children)) {
+        $rootCategories[$i]['children'] = $children;
+    }
 }
 
 echo json_encode([
     'status' => 'success',
-    'categories' => $categories,
+    'categories' => $rootCategories,
     'user_info' => [
         'uid' => (int)$uid,
         'season' => $season,
