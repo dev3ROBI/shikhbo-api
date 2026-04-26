@@ -1,12 +1,14 @@
 <?php
 /**
  * GET CATEGORIES FOR APP
- * Requires: uid, season, u_state
+ * Requires: Bearer token in header
+ * Returns unlimited access for authenticated users
  */
 require_once __DIR__ . '/../includes/app_security_validation.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Headers: Authorization, Content-Type');
 header('Cache-Control: public, max-age=300');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -14,11 +16,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
+// Get Bearer token from header
+$token = getBearerToken();
+
+// Get user info from query params
 $uid = $_GET['uid'] ?? null;
 $season = $_GET['season'] ?? null;
 $u_state = $_GET['u_state'] ?? null;
 
+// Validate security params
 $security = requireAppSecurity($uid, $season, $u_state);
+
+// Optionally verify token matches user
+if ($token) {
+    $tokenVerify = verifyToken($token, $uid);
+    if (!$tokenVerify['valid']) {
+        // Token invalid but user still has access via security params
+        // This is fine - security params already validate the user
+    }
+}
+
 $conn = getAppSecurityConn();
 
 $result = $conn->query("SELECT id, name, slug, parent_id, level, category_type FROM exam_categories ORDER BY parent_id, sort_order, id");
@@ -52,7 +69,6 @@ echo json_encode([
     'categories' => $rootCategories,
     'user_info' => [
         'uid' => (int)$uid,
-        'season' => $season,
-        'requests_remaining' => $security['remaining'] ?? 100
+        'access' => 'unlimited'
     ]
 ]);

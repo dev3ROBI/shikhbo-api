@@ -2,8 +2,10 @@
 /**
  * GET EXAM QUESTIONS FOR APP
  * Requires: uid, season, u_state
+ * Accepts Bearer token in header
  * 
- * Usage: /api/get_exam_questions_app.php?exam_id=1&uid=1&season=2024-01-01 12:00:00&u_state=1
+ * Usage: /api/get_exam_questions_app.php?exam_id=1&uid=1&season=...&u_state=1
+ * Header: Authorization: Bearer <token>
  */
 require_once __DIR__ . '/../includes/app_security_validation.php';
 require_once __DIR__ . '/../api/config.php';
@@ -11,19 +13,26 @@ require_once __DIR__ . '/../api/config.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Authorization, Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
-// Get security parameters
 $uid = $_GET['uid'] ?? null;
 $season = $_GET['season'] ?? null;
 $u_state = $_GET['u_state'] ?? null;
 
 // Validate security
 $security = requireAppSecurity($uid, $season, $u_state);
+
+// Optional Bearer token
+$token = getBearerToken();
+if ($token) {
+    $tokenVerify = verifyToken($token, $uid);
+}
+
 $conn = getAppSecurityConn();
 
 $examId = intval($_GET['exam_id'] ?? 0);
@@ -64,8 +73,5 @@ echo json_encode([
     'per_page' => $perPage,
     'total_pages' => $totalPages,
     'questions' => $questions,
-    'user_info' => [
-        'uid' => (int)$uid,
-        'requests_remaining' => $security['remaining']
-    ]
+    'access' => 'unlimited'
 ]);

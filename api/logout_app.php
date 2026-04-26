@@ -1,10 +1,12 @@
 <?php
 /**
  * LOGOUT FOR APP
- * Requires: uid, season, u_state
+ * Requires: uid, season, u_state in body
+ * Accepts Bearer token in Authorization header
  * 
  * Usage: POST /api/logout_app.php
- * Body: {"token":"...", "uid":1, "season":"__", "u_state":"1"}
+ * Header: Authorization: Bearer <token>
+ * Body: {"uid":1, "season":"...", "u_state":"1"}
  */
 require_once __DIR__ . '/../includes/app_security_validation.php';
 require_once __DIR__ . '/../api/config.php';
@@ -12,6 +14,7 @@ require_once __DIR__ . '/../api/config.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Authorization, Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -30,16 +33,23 @@ $uid = $input['uid'] ?? null;
 $season = $input['season'] ?? null;
 $u_state = $input['u_state'] ?? null;
 
+// Validate security
 $security = requireAppSecurity($uid, $season, $u_state);
 
-$token = trim($input['token'] ?? '');
+$conn = getAppSecurityConn();
+
+// Get Bearer token from header
+$token = getBearerToken();
+
+// If no Bearer token, check body
+if (empty($token)) {
+    $token = trim($input['token'] ?? '');
+}
 
 if (empty($token)) {
     echo json_encode(["status" => "error", "message" => "Token is required"]);
     exit;
 }
-
-$conn = getAppSecurityConn();
 
 $stmt = $conn->prepare("DELETE FROM user_tokens WHERE token = ?");
 $stmt->bind_param("s", $token);

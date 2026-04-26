@@ -1,10 +1,12 @@
 <?php
 /**
  * SUBMIT EXAM FOR APP
- * Requires: uid, season, u_state
+ * Requires: uid, season, u_state in body
+ * Accepts Bearer token in Authorization header
  * 
  * Usage: POST /api/submit_exam_app.php
- * Body: {"exam_id":1, "answers":[], "uid":1, "season":"__", "u_state":"1"}
+ * Header: Authorization: Bearer <token>
+ * Body: {"exam_id":1, "answers":[], "uid":1, "season":"...", "u_state":"1"}
  */
 require_once __DIR__ . '/../includes/app_security_validation.php';
 require_once __DIR__ . '/../api/config.php';
@@ -12,22 +14,28 @@ require_once __DIR__ . '/../api/config.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Authorization, Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
-// Get POST data
 $input = json_decode(file_get_contents('php://input'), true);
 
-// Get security parameters
 $uid = $input['uid'] ?? null;
 $season = $input['season'] ?? null;
 $u_state = $input['u_state'] ?? null;
 
 // Validate security
 $security = requireAppSecurity($uid, $season, $u_state);
+
+// Optional Bearer token
+$token = getBearerToken();
+if ($token) {
+    $tokenVerify = verifyToken($token, $uid);
+}
+
 $conn = getAppSecurityConn();
 
 $examId = intval($input['exam_id'] ?? 0);
@@ -39,7 +47,6 @@ if (!$examId || empty($answers)) {
     exit;
 }
 
-// Fetch correct answers
 $stmt = $conn->prepare("SELECT id, correct_answer, marks FROM questions WHERE exam_id = ?");
 $stmt->bind_param('i', $examId);
 $stmt->execute();
@@ -90,8 +97,5 @@ echo json_encode([
     'percentage' => round($percentage, 2),
     'exam_status' => $status,
     'details' => $details,
-    'user_info' => [
-        'uid' => (int)$uid,
-        'requests_remaining' => $security['remaining']
-    ]
+    'access' => 'unlimited'
 ]);

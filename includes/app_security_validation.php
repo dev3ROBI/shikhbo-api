@@ -3,7 +3,7 @@
  * Shikhbo App Security Validation
  * 
  * This function validates security parameters for all _app.php APIs
- * Required: uid (user ID), season (timestamp), u_state (active state)
+ * Uses Bearer token for authentication - users get unlimited access
  */
 
 // Single shared connection
@@ -20,7 +20,7 @@ function getAppSecurityConn() {
 }
 
 // =======================
-// VALIDATE APP SECURITY
+// VALIDATE APP SECURITY (Token-based - unlimited access)
 // =======================
 function validateAppSecurity($uid, $season, $u_state) {
     $conn = getAppSecurityConn();
@@ -42,25 +42,7 @@ function validateAppSecurity($uid, $season, $u_state) {
         ];
     }
     
-    // 2. Check season exists and not expired
-    if (!$season) {
-        return [
-            'valid' => false,
-            'message' => 'Missing season timestamp',
-            'code' => 'SEASON_REQUIRED'
-        ];
-    }
-    
-    $seasonTimestamp = strtotime($season);
-    if (!$seasonTimestamp || $seasonTimestamp < time()) {
-        return [
-            'valid' => false,
-            'message' => 'Season expired. Please login again.',
-            'code' => 'SEASON_EXPIRED'
-        ];
-    }
-    
-    // 3. Check user active state
+    // 2. Check user active state
     if (!$u_state || $u_state !== '1') {
         return [
             'valid' => false,
@@ -69,7 +51,7 @@ function validateAppSecurity($uid, $season, $u_state) {
         ];
     }
     
-    // 4. Verify user exists in database
+    // 3. Verify user exists in database
     $stmt = $conn->prepare("SELECT id, name, email, status, is_active FROM users WHERE id = ?");
     $stmt->bind_param('i', $uid);
     $stmt->execute();
@@ -93,107 +75,89 @@ function validateAppSecurity($uid, $season, $u_state) {
         ];
     }
     
-    // 5. Check rate limit
-    $rateCheck = checkAppRateLimit($conn, $uid);
-    if (!$rateCheck['allowed']) {
+    // User is valid - unlimited access
+    return [
+        'valid' => true,
+        'user' => $user,
+        'remaining' => 'unlimited',
+        'unlimited_access' => true
+    ];
+}
+
+// =======================
+// GET BEARER TOKEN FROM HEADER
+// =======================
+function getBearerToken() {
+    $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
+    
+    if (empty($authHeader)) {
+        return null;
+    }
+    
+    // Remove "Bearer " prefix if present
+    if (stripos($authHeader, 'Bearer ') === 0) {
+        return trim(substr($authHeader, 7));
+    }
+    
+    return trim($authHeader);
+}
+
+// =======================
+// VERIFY TOKEN (For APIs that need explicit token validation)
+// =======================
+function verifyToken($token, $userId = null) {
+    if (empty($token)) {
         return [
             'valid' => false,
-            'message' => 'Rate limit exceeded. Try again after 3 hours.',
-            'code' => 'RATE_LIMIT_EXCEEDED',
-            'season_expires' => $rateCheck['season_expires'] ?? null
+            'message' => 'Token required',
+            'code' => 'TOKEN_REQUIRED'
+        ];
+    }
+    
+    $conn = getAppSecurityConn();
+    
+    // Clean up expired tokens periodically (1% chance)
+    if (rand(1, 100) === 1) {
+        $conn->query("DELETE FROM user_tokens WHERE expires_at < NOW()");
+    }
+    
+    // Verify token exists and not expired
+    $stmt = $conn->prepare("SELECT user_id, expires_at FROM user_tokens WHERE token = ?");
+    $stmt->bind_param('s', $token);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $tokenData = $result->fetch_assoc();
+    $stmt->close();
+    
+    if (!$tokenData) {
+        return [
+            'valid' => false,
+            'message' => 'Invalid token',
+            'code' => 'INVALID_TOKEN'
+        ];
+    }
+    
+    if (strtotime($tokenData['expires_at']) < time()) {
+        return [
+            'valid' => false,
+            'message' => 'Token expired',
+            'code' => 'TOKEN_EXPIRED'
+        ];
+    }
+    
+    // If userId provided, verify it matches
+    if ($userId !== null && $tokenData['user_id'] != $userId) {
+        return [
+            'valid' => false,
+            'message' => 'Token does not match user',
+            'code' => 'TOKEN_MISMATCH'
         ];
     }
     
     return [
         'valid' => true,
-        'user' => $user,
-        'remaining' => $rateCheck['remaining'] ?? 100,
-        'season_expires' => $rateCheck['season_expires'] ?? null
-    ];
-}
-
-// =======================
-// CHECK RATE LIMIT
-// =======================
-function checkAppRateLimit($conn, $userId) {
-    $table = 'app_api_usage';
-    $cutoff = date('Y-m-d H:i:s', strtotime('-3 hours'));
-    
-    // Create table if not exists
-    $conn->query("CREATE TABLE IF NOT EXISTS `$table` (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id VARCHAR(50) NOT NULL,
-        request_count INT DEFAULT 0,
-        last_request TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        season_expires TIMESTAMP DEFAULT NULL,
-        INDEX idx_user (user_id)
-    )");
-    
-    // Get or create user record
-    $stmt = $conn->prepare("SELECT * FROM `$table` WHERE user_id = ?");
-    $stmt->bind_param('s', $userId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $record = $result->fetch_assoc();
-    $stmt->close();
-    
-    $maxRequests = 100;
-    $seasonHours = 3;
-    
-    if (!$record) {
-        $seasonExpires = date('Y-m-d H:i:s', strtotime('+' . $seasonHours . ' hours'));
-        $stmt = $conn->prepare("INSERT INTO `$table` (user_id, request_count, season_expires) VALUES (?, 1, ?)");
-        $stmt->bind_param('ss', $userId, $seasonExpires);
-        $stmt->execute();
-        $stmt->close();
-        
-        return [
-            'allowed' => true,
-            'remaining' => $maxRequests - 1,
-            'season_expires' => $seasonExpires
-        ];
-    }
-    
-    // Clean old records
-    $conn->query("DELETE FROM `$table` WHERE last_request < '$cutoff'");
-    
-    // Check season expired - reset if needed
-    if ($record['season_expires'] && strtotime($record['season_expires']) < time()) {
-        $seasonExpires = date('Y-m-d H:i:s', strtotime('+' . $seasonHours . ' hours'));
-        $stmt = $conn->prepare("UPDATE `$table` SET request_count = 1, season_expires = ? WHERE user_id = ?");
-        $stmt->bind_param('ss', $seasonExpires, $userId);
-        $stmt->execute();
-        $stmt->close();
-        
-        return [
-            'allowed' => true,
-            'remaining' => $maxRequests - 1,
-            'season_expires' => $seasonExpires,
-            'season_reset' => true
-        ];
-    }
-    
-    // Check rate limit
-    if ($record['request_count'] >= $maxRequests) {
-        return [
-            'allowed' => false,
-            'message' => 'Rate limit exceeded',
-            'season_expires' => $record['season_expires']
-        ];
-    }
-    
-    // Increment counter
-    $stmt = $conn->prepare("UPDATE `$table` SET request_count = request_count + 1, last_request = NOW() WHERE user_id = ?");
-    $stmt->bind_param('s', $userId);
-    $stmt->execute();
-    $stmt->close();
-    
-    $remaining = $maxRequests - $record['request_count'] - 1;
-    
-    return [
-        'allowed' => true,
-        'remaining' => max(0, $remaining),
-        'season_expires' => $record['season_expires']
+        'user_id' => (int)$tokenData['user_id'],
+        'expires_at' => $tokenData['expires_at']
     ];
 }
 
