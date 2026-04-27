@@ -24,10 +24,8 @@ $uid = $_GET['uid'] ?? null;
 $season = $_GET['season'] ?? null;
 $u_state = $_GET['u_state'] ?? null;
 
-// Validate security
 $security = requireAppSecurity($uid, $season, $u_state);
 
-// Optional Bearer token verification
 $token = getBearerToken();
 if ($token) {
     $tokenVerify = verifyToken($token, $uid);
@@ -43,10 +41,71 @@ if ($categoryId <= 0) {
     exit;
 }
 
-if ($direct) {
+$childCategories = [];
+$exams = [];
+
+if (!$direct) {
+    function getAllChildCategoryIds($conn, $parentId, &$ids = []) {
+        $ids[] = $parentId;
+        $stmt = $conn->prepare("SELECT id, name, icon FROM exam_categories WHERE parent_id = ? AND is_active = 1 ORDER BY sort_order, name");
+        $stmt->bind_param('i', $parentId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        while ($row = $result->fetch_assoc()) {
+            $childCategories[] = $row;
+            getAllChildCategoryIds($conn, $row['id'], $ids);
+        }
+        $stmt->close();
+        return $ids;
+    }
+
+    $categoryIds = getAllChildCategoryIds($conn, $categoryId);
+
+    foreach ($childCategories as &$cat) {
+        $catId = $cat['id'];
+        $countStmt = $conn->prepare("SELECT COUNT(*) as c FROM exams WHERE category_id = ? AND status = 'active'");
+        $countStmt->bind_param('i', $catId);
+        $countStmt->execute();
+        $cat['exam_count'] = $countStmt->get_result()->fetch_assoc()['c'];
+        $countStmt->close();
+    }
+    unset($cat);
+
+    $placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
+    $types = str_repeat('i', count($categoryIds));
+
     $stmt = $conn->prepare("
         SELECT e.id, e.title, e.duration_minutes, e.total_marks, e.passing_percentage,
-               e.status, e.is_free, c.name AS category_name
+               e.status, e.is_free, c.name AS category_name, c.id AS category_id
+        FROM exams e
+        JOIN exam_categories c ON e.category_id = c.id
+        WHERE e.category_id IN ($placeholders) AND e.status = 'active'
+        ORDER BY c.sort_order, c.name, e.created_at DESC
+    ");
+    $stmt->bind_param($types, ...$categoryIds);
+    $stmt->execute();
+    $exams = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+} else {
+    $stmt = $conn->prepare("SELECT id, name, icon FROM exam_categories WHERE parent_id = ? AND is_active = 1 ORDER BY sort_order, name");
+    $stmt->bind_param('i', $categoryId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $childCategories = [];
+    while ($row = $result->fetch_assoc()) {
+        $catId = $row['id'];
+        $countStmt = $conn->prepare("SELECT COUNT(*) as c FROM exams WHERE category_id = ? AND status = 'active'");
+        $countStmt->bind_param('i', $catId);
+        $countStmt->execute();
+        $row['exam_count'] = $countStmt->get_result()->fetch_assoc()['c'];
+        $countStmt->close();
+        $childCategories[] = $row;
+    }
+    $stmt->close();
+
+    $stmt = $conn->prepare("
+        SELECT e.id, e.title, e.duration_minutes, e.total_marks, e.passing_percentage,
+               e.status, e.is_free, c.name AS category_name, c.id AS category_id
         FROM exams e
         JOIN exam_categories c ON e.category_id = c.id
         WHERE e.category_id = ? AND e.status = 'active'
@@ -56,40 +115,12 @@ if ($direct) {
     $stmt->execute();
     $exams = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
-} else {
-    function getAllChildCategoryIds($conn, $parentId, &$ids = []) {
-        $ids[] = $parentId;
-        $stmt = $conn->prepare("SELECT id FROM exam_categories WHERE parent_id = ? AND is_active = 1");
-        $stmt->bind_param('i', $parentId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        while ($row = $result->fetch_assoc()) {
-            getAllChildCategoryIds($conn, $row['id'], $ids);
-        }
-        $stmt->close();
-        return $ids;
-    }
-
-    $categoryIds = getAllChildCategoryIds($conn, $categoryId);
-    $placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
-    $types = str_repeat('i', count($categoryIds));
-
-    $stmt = $conn->prepare("
-        SELECT e.id, e.title, e.duration_minutes, e.total_marks, e.passing_percentage,
-               e.status, e.is_free, c.name AS category_name
-        FROM exams e
-        JOIN exam_categories c ON e.category_id = c.id
-        WHERE e.category_id IN ($placeholders) AND e.status = 'active'
-        ORDER BY e.created_at DESC
-    ");
-    $stmt->bind_param($types, ...$categoryIds);
-    $stmt->execute();
-    $exams = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
 }
 
 echo json_encode([
     'status' => 'success',
+    'has_children' => !empty($childCategories),
+    'child_categories' => $childCategories,
     'exams' => $exams ?: [],
     'access' => 'unlimited'
 ]);
