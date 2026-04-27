@@ -121,48 +121,29 @@ try {
     // Recent exam history
     $recentExams = [];
     try {
-        // Build query with integer values
+        $uidInt = (int)$uid;
         $limitInt = (int)$limit;
         $offsetInt = (int)$offset;
         
-        // Direct query with explicit values
-        $sql = "SELECT * FROM exam_results WHERE user_id = " . (int)$uid . " ORDER BY completed_at DESC LIMIT " . $limitInt . " OFFSET " . $offsetInt;
+        // Simple LEFT JOIN query
+        $sql = "SELECT er.id, er.exam_id, er.score, er.total_marks, er.percentage, er.status, er.completed_at,
+                       e.title as exam_title, e.category_id
+                FROM exam_results er
+                LEFT JOIN exams e ON er.exam_id = e.id 
+                WHERE er.user_id = $uidInt
+                ORDER BY er.completed_at DESC
+                LIMIT $limitInt OFFSET $offsetInt";
         
         $result = $conn->query($sql);
         
-        if (!$result) {
-            // Query failed, try alternative
-            $sql2 = "SELECT * FROM exam_results WHERE user_id = " . (int)$uid . " ORDER BY id DESC LIMIT " . $limitInt . " OFFSET " . $offsetInt;
-            $result = $conn->query($sql2);
-        }
-        
         if ($result && $result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
-                // Get exam title from exams table
-                $examId = (int)$row['exam_id'];
-                $examTitle = "Exam $examId";
-                $categoryId = 0;
-                $categoryName = "General";
-                
-                $examResult = $conn->query("SELECT title, category_id FROM exams WHERE id = $examId");
-                if ($examResult && $examRow = $examResult->fetch_assoc()) {
-                    $examTitle = $examRow['title'];
-                    $categoryId = (int)$examRow['category_id'];
-                    
-                    if ($categoryId > 0) {
-                        $catResult = $conn->query("SELECT name FROM categories WHERE id = $categoryId");
-                        if ($catResult && $catRow = $catResult->fetch_assoc()) {
-                            $categoryName = $catRow['name'];
-                        }
-                    }
-                }
-                
                 $recentExams[] = [
                     'id' => (int)$row['id'],
-                    'exam_id' => $examId,
-                    'exam_title' => $examTitle,
-                    'category_id' => $categoryId,
-                    'category_name' => $categoryName,
+                    'exam_id' => (int)$row['exam_id'],
+                    'exam_title' => $row['exam_title'] ?: 'Exam ' . $row['exam_id'],
+                    'category_id' => (int)$row['category_id'],
+                    'category_name' => 'General',
                     'score' => (int)$row['score'],
                     'total_marks' => (int)$row['total_marks'],
                     'percentage' => round($row['percentage'], 1),
