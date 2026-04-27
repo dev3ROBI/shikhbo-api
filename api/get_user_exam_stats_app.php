@@ -49,8 +49,8 @@ try {
 
     $limit = isset($input['limit']) ? intval($input['limit']) : 10;
     $offset = isset($input['offset']) ? intval($input['offset']) : 0;
-    $limit = max(1, min($limit, 50));
-    $offset = max(0, $offset);
+    $limit = max(1, min((int)$limit, 50));
+    $offset = max(0, (int)$offset);
 
     // Overall stats - simplified queries
     $totalExamsTaken = 0;
@@ -121,9 +121,20 @@ try {
     // Recent exam history
     $recentExams = [];
     try {
-        // Simple query first
-        $sql = "SELECT * FROM exam_results WHERE user_id = $uid ORDER BY completed_at DESC LIMIT $limit OFFSET $offset";
+        // Build query with integer values
+        $limitInt = (int)$limit;
+        $offsetInt = (int)$offset;
+        
+        // Direct query with explicit values
+        $sql = "SELECT * FROM exam_results WHERE user_id = " . (int)$uid . " ORDER BY completed_at DESC LIMIT " . $limitInt . " OFFSET " . $offsetInt;
+        
         $result = $conn->query($sql);
+        
+        if (!$result) {
+            // Query failed, try alternative
+            $sql2 = "SELECT * FROM exam_results WHERE user_id = " . (int)$uid . " ORDER BY id DESC LIMIT " . $limitInt . " OFFSET " . $offsetInt;
+            $result = $conn->query($sql2);
+        }
         
         if ($result && $result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
@@ -161,7 +172,7 @@ try {
             }
         }
     } catch (Exception $e) {
-        // ignore
+        // continue with empty array
     }
 
     // Best performing exam
