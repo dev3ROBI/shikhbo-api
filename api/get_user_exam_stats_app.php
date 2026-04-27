@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-$uid = $data['uid'] ?? null;
+$uid = isset($data['uid']) ? (int)$data['uid'] : 0;
 $season = $data['season'] ?? null;
 $u_state = $data['u_state'] ?? null;
 
@@ -39,25 +39,83 @@ $conn = getAppSecurityConn();
 
 $limit = isset($data['limit']) ? intval($data['limit']) : 10;
 $offset = isset($data['offset']) ? intval($data['offset']) : 0;
+$limit = max(1, min($limit, 50));
+$offset = max(0, $offset);
+
+function fetchSingleValue(mysqli $conn, string $sql, int $uid, string $alias, string $types = 'i', array $extraParams = [])
+{
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        return 0;
+    }
+
+    $params = array_merge([$uid], $extraParams);
+    $bindParams = [$types];
+    foreach ($params as $index => $value) {
+        $bindParams[] = &$params[$index];
+    }
+    call_user_func_array([$stmt, 'bind_param'], $bindParams);
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+
+    return $row[$alias] ?? 0;
+}
 
 // Overall stats
-$totalExamsTaken = $conn->query("SELECT COUNT(*) as c FROM exam_results WHERE user_id = $uid")->fetch_assoc()['c'];
-$totalScore = $conn->query("SELECT COALESCE(SUM(score), 0) as s FROM exam_results WHERE user_id = $uid")->fetch_assoc()['s'];
-$totalMarks = $conn->query("SELECT COALESCE(SUM(total_marks), 0) as m FROM exam_results WHERE user_id = $uid")->fetch_assoc()['m'];
-$avgPercentage = $conn->query("SELECT COALESCE(AVG(percentage), 0) as a FROM exam_results WHERE user_id = $uid")->fetch_assoc()['a'];
-$passedCount = $conn->query("SELECT COUNT(*) as c FROM exam_results WHERE user_id = $uid AND status = 'passed'")->fetch_assoc()['c'];
-$failedCount = $conn->query("SELECT COUNT(*) as c FROM exam_results WHERE user_id = $uid AND status = 'failed'")->fetch_assoc()['c'];
+$totalExamsTaken = (int) fetchSingleValue(
+    $conn,
+    "SELECT COUNT(*) as c FROM exam_results WHERE user_id = ?",
+    $uid,
+    'c'
+);
+$totalScore = (int) fetchSingleValue(
+    $conn,
+    "SELECT COALESCE(SUM(score), 0) as s FROM exam_results WHERE user_id = ?",
+    $uid,
+    's'
+);
+$totalMarks = (int) fetchSingleValue(
+    $conn,
+    "SELECT COALESCE(SUM(total_marks), 0) as m FROM exam_results WHERE user_id = ?",
+    $uid,
+    'm'
+);
+$avgPercentage = (float) fetchSingleValue(
+    $conn,
+    "SELECT COALESCE(AVG(percentage), 0) as a FROM exam_results WHERE user_id = ?",
+    $uid,
+    'a'
+);
+$passedCount = (int) fetchSingleValue(
+    $conn,
+    "SELECT COUNT(*) as c FROM exam_results WHERE user_id = ? AND status = 'passed'",
+    $uid,
+    'c'
+);
+$failedCount = (int) fetchSingleValue(
+    $conn,
+    "SELECT COUNT(*) as c FROM exam_results WHERE user_id = ? AND status = 'failed'",
+    $uid,
+    'c'
+);
 
 // Unique exams attempted
-$uniqueExams = $conn->query("SELECT COUNT(DISTINCT exam_id) as c FROM exam_results WHERE user_id = $uid")->fetch_assoc()['c'];
+$uniqueExams = (int) fetchSingleValue(
+    $conn,
+    "SELECT COUNT(DISTINCT exam_id) as c FROM exam_results WHERE user_id = ?",
+    $uid,
+    'c'
+);
 
 // Recent exam history
 $recentQuery = $conn->prepare("
-    SELECT r.*, e.title as exam_title, e.category_id, c.name as category_name,
-           ROW_NUMBER() OVER (PARTITION BY r.exam_id ORDER BY r.completed_at DESC) as rn
+    SELECT r.*, e.title as exam_title, e.category_id, c.name as category_name
     FROM exam_results r 
     JOIN exams e ON r.exam_id = e.id 
-    LEFT JOIN categories c ON e.category_id = c.id 
+    LEFT JOIN exam_categories c ON e.category_id = c.id 
     WHERE r.user_id = ?
     ORDER BY r.completed_at DESC
     LIMIT ? OFFSET ?
@@ -84,17 +142,26 @@ while ($row = $recentResults->fetch_assoc()) {
 $recentQuery->close();
 
 // Best performing exam
-$bestExam = $conn->query("
-    SELECT e.title, r.percentage 
-    FROM exam_results r 
-    JOIN exams e ON r.exam_id = e.id 
-    WHERE r.user_id = $uid 
-    ORDER BY r.percentage DESC 
+$bestExam = null;
+$bestExamQuery = $conn->prepare("
+    SELECT e.title, r.percentage
+    FROM exam_results r
+    JOIN exams e ON r.exam_id = e.id
+    WHERE r.user_id = ?
+    ORDER BY r.percentage DESC, r.completed_at DESC, r.id DESC
     LIMIT 1
-")->fetch_assoc();
+");
+if ($bestExamQuery) {
+    $bestExamQuery->bind_param("i", $uid);
+    $bestExamQuery->execute();
+    $bestExamResult = $bestExamQuery->get_result();
+    $bestExam = $bestExamResult ? $bestExamResult->fetch_assoc() : null;
+    $bestExamQuery->close();
+}
 
 // Category-wise performance
-$categoryStatsQuery = $conn->query("
+$categoryStats = [];
+$categoryStatsQuery = $conn->prepare("
     SELECT c.name as category_name, c.id as category_id,
            COUNT(r.id) as exams_taken,
            AVG(r.percentage) as avg_percentage,
@@ -102,23 +169,29 @@ $categoryStatsQuery = $conn->query("
            SUM(CASE WHEN r.status = 'failed' THEN 1 ELSE 0 END) as failed
     FROM exam_results r
     JOIN exams e ON r.exam_id = e.id
-    LEFT JOIN categories c ON e.category_id = c.id
-    WHERE r.user_id = $uid
+    LEFT JOIN exam_categories c ON e.category_id = c.id
+    WHERE r.user_id = ?
     GROUP BY c.id, c.name
     ORDER BY exams_taken DESC
     LIMIT 5
 ");
+if ($categoryStatsQuery) {
+    $categoryStatsQuery->bind_param("i", $uid);
+    $categoryStatsQuery->execute();
+    $categoryStatsResult = $categoryStatsQuery->get_result();
 
-$categoryStats = [];
-while ($row = $categoryStatsQuery->fetch_assoc()) {
-    $categoryStats[] = [
-        'category_id' => (int)$row['category_id'],
-        'category_name' => $row['category_name'] ?? 'Uncategorized',
-        'exams_taken' => (int)$row['exams_taken'],
-        'avg_percentage' => round($row['avg_percentage'], 1),
-        'passed' => (int)$row['passed'],
-        'failed' => (int)$row['failed']
-    ];
+    while ($categoryStatsResult && $row = $categoryStatsResult->fetch_assoc()) {
+        $categoryStats[] = [
+            'category_id' => (int)($row['category_id'] ?? 0),
+            'category_name' => $row['category_name'] ?? 'Uncategorized',
+            'exams_taken' => (int)$row['exams_taken'],
+            'avg_percentage' => round((float)$row['avg_percentage'], 1),
+            'passed' => (int)$row['passed'],
+            'failed' => (int)$row['failed']
+        ];
+    }
+
+    $categoryStatsQuery->close();
 }
 
 echo json_encode([
