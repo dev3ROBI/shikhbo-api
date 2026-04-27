@@ -121,36 +121,37 @@ try {
     // Recent exam history
     $recentExams = [];
     try {
-        $recentQuery = $conn->prepare("
-            SELECT r.id, r.exam_id, e.title as exam_title, e.category_id, c.name as category_name,
-                   r.score, r.total_marks, r.percentage, r.status, r.completed_at
-            FROM exam_results r 
-            JOIN exams e ON r.exam_id = e.id 
-            LEFT JOIN categories c ON e.category_id = c.id 
-            WHERE r.user_id = ?
-            ORDER BY r.completed_at DESC
-            LIMIT ? OFFSET ?
-        ");
-        $recentQuery->bind_param("iii", $uid, $limit, $offset);
-        $recentQuery->execute();
-        $recentResults = $recentQuery->get_result();
-
-        while ($row = $recentResults->fetch_assoc()) {
-            $recentExams[] = [
-                'id' => (int)$row['id'],
-                'exam_id' => (int)$row['exam_id'],
-                'exam_title' => $row['exam_title'],
-                'category_id' => (int)$row['category_id'],
-                'category_name' => $row['category_name'] ?? '',
-                'score' => (int)$row['score'],
-                'total_marks' => (int)$row['total_marks'],
-                'percentage' => round($row['percentage'], 1),
-                'status' => $row['status'],
-                'completed_at' => $row['completed_at']
-            ];
+        // Direct query for debugging
+        $sql = "SELECT r.id, r.exam_id, e.title as exam_title, e.category_id, c.name as category_name,
+                r.score, r.total_marks, r.percentage, r.status, r.completed_at
+        FROM exam_results r 
+        JOIN exams e ON r.exam_id = e.id 
+        LEFT JOIN categories c ON e.category_id = c.id 
+        WHERE r.user_id = $uid
+        ORDER BY r.completed_at DESC
+        LIMIT $limit OFFSET $offset";
+        
+        $result = $conn->query($sql);
+        
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $recentExams[] = [
+                    'id' => (int)$row['id'],
+                    'exam_id' => (int)$row['exam_id'],
+                    'exam_title' => $row['exam_title'],
+                    'category_id' => (int)$row['category_id'],
+                    'category_name' => $row['category_name'] ?? '',
+                    'score' => (int)$row['score'],
+                    'total_marks' => (int)$row['total_marks'],
+                    'percentage' => round($row['percentage'], 1),
+                    'status' => $row['status'],
+                    'completed_at' => $row['completed_at']
+                ];
+            }
         }
-        $recentQuery->close();
-    } catch (Exception $e) {}
+    } catch (Exception $e) {
+        // ignore
+    }
 
     // Best performing exam
     $bestExam = null;
