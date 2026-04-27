@@ -48,8 +48,8 @@ try {
     $conn = getAppSecurityConn();
     $conn->set_charset('utf8mb4');
 
-    // Get user profile
-    $stmt = $conn->prepare("SELECT id, name, email, profile_image, referral_code, login_method, language, tagline, streak, member_since, is_premium, status, created_at FROM users WHERE id = ?");
+    // Get user profile - use only existing columns
+    $stmt = $conn->prepare("SELECT id, name, email, profile_image, referral_code, language, tagline, streak, member_since, is_premium, status, created_at FROM users WHERE id = ?");
     $stmt->bind_param("i", $uid);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -62,6 +62,11 @@ try {
     $user = $result->fetch_assoc();
     $stmt->close();
 
+    $memberSince = $user['member_since'];
+    if (empty($memberSince) && !empty($user['created_at'])) {
+        $memberSince = date('Y-m-d', strtotime($user['created_at']));
+    }
+
     echo json_encode([
         'status' => 'success',
         'user' => [
@@ -70,10 +75,10 @@ try {
             'email' => $user['email'],
             'profile_image' => $user['profile_image'] ?? '',
             'referral_code' => $user['referral_code'] ?? '',
-            'login_method' => $user['login_method'] ?? 'email',
+            'language' => $user['language'] ?? 'en',
             'tagline' => $user['tagline'] ?? '',
             'streak' => (int)$user['streak'],
-            'member_since' => $user['member_since'] ?? date('Y-m-d', strtotime($user['created_at'])),
+            'member_since' => $memberSince ?? date('Y-m-d'),
             'is_premium' => (bool)$user['is_premium']
         ],
         'access' => 'unlimited'
