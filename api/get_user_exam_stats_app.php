@@ -121,26 +121,37 @@ try {
     // Recent exam history
     $recentExams = [];
     try {
-        // Direct query for debugging
-        $sql = "SELECT r.id, r.exam_id, e.title as exam_title, e.category_id, c.name as category_name,
-                r.score, r.total_marks, r.percentage, r.status, r.completed_at
-        FROM exam_results r 
-        JOIN exams e ON r.exam_id = e.id 
-        LEFT JOIN categories c ON e.category_id = c.id 
-        WHERE r.user_id = $uid
-        ORDER BY r.completed_at DESC
-        LIMIT $limit OFFSET $offset";
-        
+        // Simple query first
+        $sql = "SELECT * FROM exam_results WHERE user_id = $uid ORDER BY completed_at DESC LIMIT $limit OFFSET $offset";
         $result = $conn->query($sql);
         
-        if ($result) {
+        if ($result && $result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
+                // Get exam title from exams table
+                $examId = (int)$row['exam_id'];
+                $examTitle = "Exam $examId";
+                $categoryId = 0;
+                $categoryName = "General";
+                
+                $examResult = $conn->query("SELECT title, category_id FROM exams WHERE id = $examId");
+                if ($examResult && $examRow = $examResult->fetch_assoc()) {
+                    $examTitle = $examRow['title'];
+                    $categoryId = (int)$examRow['category_id'];
+                    
+                    if ($categoryId > 0) {
+                        $catResult = $conn->query("SELECT name FROM categories WHERE id = $categoryId");
+                        if ($catResult && $catRow = $catResult->fetch_assoc()) {
+                            $categoryName = $catRow['name'];
+                        }
+                    }
+                }
+                
                 $recentExams[] = [
                     'id' => (int)$row['id'],
-                    'exam_id' => (int)$row['exam_id'],
-                    'exam_title' => $row['exam_title'],
-                    'category_id' => (int)$row['category_id'],
-                    'category_name' => $row['category_name'] ?? '',
+                    'exam_id' => $examId,
+                    'exam_title' => $examTitle,
+                    'category_id' => $categoryId,
+                    'category_name' => $categoryName,
                     'score' => (int)$row['score'],
                     'total_marks' => (int)$row['total_marks'],
                     'percentage' => round($row['percentage'], 1),
