@@ -18,15 +18,19 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
 
 ## ✨ Features
 
-### 📱 Mobile API
+### 📱 Mobile API (App)
 - 🔐 Google Authentication (OAuth 2.0)
-- 👤 User Registration & Login
+- 👤 User Registration & Login (Email/Password)
 - 🎁 Referral System (Auto Rewards)
-- 🖼 Profile Image Handling
+- 🖼 Profile Image Handling (Upload & Update)
 - 🔑 Token-based Authentication
 - 🌍 Multi-language Support (EN / BN)
 - 📝 Exam Attempt & Result Submission
 - 📚 Question Bank Management
+- 📊 User Exam Statistics
+- 🔍 Token Verification
+- 🚪 Secure Logout
+- ⚙️ App Settings (Maintenance, Force Update, Notices)
 
 ### 🖥 Admin Panel (Web)
 - 📊 Dashboard with real-time stats & live clock
@@ -41,6 +45,7 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
 - 🛡 CSRF Protection, Rate Limiting, SQL Injection Prevention
 - 🌙 Dark Mode Support
 - 📱 Fully responsive (Tailwind CSS)
+- 👤 Admin Registration & Profile Settings
 
 ---
 
@@ -50,9 +55,10 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
 | --------- | ------------------------------ |
 | Backend   | PHP (Custom API + Web Router)   |
 | Database  | MySQL (Railway)               |
-| Hosting   | Render                        |
+| Hosting   | Render (PHP Runtime / Docker) |
 | Auth      | Google OAuth / Token / Session |
 | Frontend  | Tailwind CSS + Font Awesome  |
+| Container | Docker                        |
 
 ---
 
@@ -80,6 +86,8 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
 ---
 
 ## 📌 API Endpoints
+
+All API endpoints are separated for **App** (`_app.php`) and **Web Admin** (`_web.php`) where applicable.
 
 ### 🔑 Google Login
 
@@ -116,9 +124,9 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
 
 ---
 
-### 📝 Email Login
+### 📝 App Login
 
-**POST** `/api/login.php`
+**POST** `/api/login_app.php`
 
 ```json
 {
@@ -129,9 +137,22 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
 
 ---
 
-### 📝 Registration
+### 📝 Web Admin Login
 
-**POST** `/api/signup.php`
+**POST** `/api/login_web.php`
+
+```json
+{
+  "email": "admin@shikhbo.com",
+  "password": "Admin@123#Secure"
+}
+```
+
+---
+
+### 📝 App Registration
+
+**POST** `/api/signup_app.php`
 
 ```json
 {
@@ -144,9 +165,53 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
 
 ---
 
-### 📤 Profile Update
+### 📝 Web Admin Registration
 
-**POST** `/api/update_profile.php`
+**POST** `/api/signup_web.php`
+
+```json
+{
+  "name": "Admin Name",
+  "email": "admin2@shikhbo.com",
+  "password": "SecurePass123#"
+}
+```
+
+---
+
+### 🔍 Verify Token (App)
+
+**POST** `/api/verify_token_app.php`
+
+```json
+{
+  "token": "user_token"
+}
+```
+
+---
+
+### 👤 Get User (App)
+
+**POST** `/api/get_user_app.php`
+
+```json
+{
+  "token": "user_token"
+}
+```
+
+---
+
+### 👤 Get User (Web)
+
+**GET** `/api/get_user_web.php` (Session-based)
+
+---
+
+### 📤 Update Profile (App)
+
+**POST** `/api/update_profile_app.php`
 
 ```json
 {
@@ -157,9 +222,21 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
 
 ---
 
-### 🎓 Exam Categories
+### 🚪 App Logout
 
-**GET** `/api/get_categories.php?parent_id=1`
+**POST** `/api/logout_app.php`
+
+```json
+{
+  "token": "user_token"
+}
+```
+
+---
+
+### 🎓 Exam Categories (App)
+
+**GET** `/api/get_categories_app.php?parent_id=1`
 
 **Response:**
 ```json
@@ -169,7 +246,6 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
     {
       "id": 1,
       "name": "Academic",
-      "slug": "academic",
       "slug": "academic",
       "level": 1,
       "category_type": "academic",
@@ -182,9 +258,15 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
 
 ---
 
-### 📋 Get Exams by Category
+### 🎓 Exam Categories (Web)
 
-**GET** `/api/get_exams_by_category.php?category_id=1&direct=1`
+**GET** `/api/get_categories_web.php?parent_id=1`
+
+---
+
+### 📋 Get Exams by Category (App)
+
+**GET** `/api/get_exams_by_category_app.php?category_id=1&direct=1`
 
 **Response:**
 ```json
@@ -206,9 +288,15 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
 
 ---
 
-### ❓ Get Exam Questions
+### 📋 Get Exams by Category (Web)
 
-**GET** `/api/get_exam_questions.php?exam_id=1&page=1&per_page=25`
+**GET** `/api/get_exams_by_category_web.php?category_id=1`
+
+---
+
+### ❓ Get Exam Questions (App)
+
+**GET** `/api/get_exam_questions_app.php?exam_id=1&page=1&per_page=25`
 
 **Response:**
 ```json
@@ -231,9 +319,15 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
 
 ---
 
-### 📤 Submit Exam
+### ❓ Get Exam Questions (Web)
 
-**POST** `/api/submit_exam.php`
+**GET** `/api/get_exam_questions_web.php?exam_id=1`
+
+---
+
+### 📤 Submit Exam (App)
+
+**POST** `/api/submit_exam_app.php`
 
 ```json
 {
@@ -255,6 +349,25 @@ Built with PHP + MySQL • Deployed on Render • Database on Railway
   "total_marks": 20,
   "percentage": 75,
   "exam_status": "PASSED"
+}
+```
+
+---
+
+### 📤 Submit Exam (Web)
+
+**POST** `/api/submit_exam_web.php`
+
+---
+
+### 📊 User Exam Stats (App)
+
+**POST** `/api/get_user_exam_stats_app.php`
+
+```json
+{
+  "token": "user_token",
+  "user_id": 1
 }
 ```
 
@@ -328,44 +441,59 @@ Run database console in Admin Panel or visit:
 
 ```
 /
-├── index.php                    # Main admin router (requires auth)
+├── index.php                         # Main admin router (requires auth)
+├── Dockerfile                         # Docker container config
 ├── pages/
-│   ├── admin_login.php      # Admin login page
-│   ├── dashboard.php      # Dashboard with stats & live clock
-│   ├── categories.php   # Category management (tree)
-│   ├── exams.php       # Exam management
-│   ├── questions.php   # Question bank
-│   ├── exam_attempt.php # Exam browser & attempt
-│   ├── students.php   # Student management
-│   ├── results.php   # Exam results
-│   ├── admins.php    # Admin management
-│   ├── app_control.php # App settings & maintenance
-│   ├── database.php # Database console
-│   ├── settings.php # Admin profile
-│   └── logout.php  # Destroy session
+│   ├── admin_login.php               # Admin login page
+│   ├── dashboard.php                 # Dashboard with stats & live clock
+│   ├── categories.php                # Category management (tree)
+│   ├── exams.php                     # Exam management
+│   ├── questions.php                 # Question bank
+│   ├── exam_attempt.php              # Exam browser & attempt
+│   ├── students.php                  # Student management
+│   ├── results.php                   # Exam results
+│   ├── admins.php                    # Admin management
+│   ├── app_control.php               # App settings & maintenance
+│   ├── database.php                  # Database console
+│   ├── settings.php                  # Admin profile
+│   └── logout.php                    # Destroy session
 ├── includes/
-│   ├── auth.php    # Authentication & role checks
-│   └── security.php # CSRF, rate limiting, headers
+│   ├── auth.php                      # Authentication & role checks
+│   ├── security.php                  # CSRF, rate limiting, headers
+│   ├── app_security.php              # App API security
+│   └── app_security_validation.php   # App token validation
 ├── css/
-│   └── custom.css  # Custom styles & animations
+│   └── custom.css                    # Custom styles & animations
 ├── js/
-│   └── custom.js  # Sidebar, dropdowns, timer, toasts
+│   └── custom.js                     # Sidebar, dropdowns, timer, toasts
 ├── api/
-│   ├── config.php
-│   ├── connection.php
-│   ├── login.php
-│   ├── logout.php
-│   ├── signup.php
-│   ├── google_login.php
-│   ├── update_profile.php
-│   ├── get_categories.php
-│   ├── get_exams_by_category.php
-│   ├── get_exam_questions.php
-│   ├── submit_exam.php
-│   ├── get_app_settings.php
-│   └── setup_database.php
+│   ├── config.php                    # API configuration
+│   ├── connection.php                # DB connection & test
+│   ├── google_login.php              # Google OAuth login
+│   ├── setup_database.php            # DB migration & seed
+│   ├── migrate_users.php             # User migration script
+│   ├── get_app_settings.php          # App config endpoint
+│   ├── verify_token_app.php          # Token verification
+│   ├── login_app.php                 # App login
+│   ├── login_web.php                 # Web admin login
+│   ├── signup_app.php                # App registration
+│   ├── signup_web.php                # Web admin signup
+│   ├── logout_app.php                # App logout
+│   ├── get_user_app.php              # Get app user
+│   ├── get_user_web.php              # Get web user
+│   ├── update_profile_app.php        # Update app profile
+│   ├── get_categories_app.php        # App categories
+│   ├── get_categories_web.php        # Web categories
+│   ├── get_exams_by_category_app.php # App exams
+│   ├── get_exams_by_category_web.php # Web exams
+│   ├── get_exam_questions_app.php    # App questions
+│   ├── get_exam_questions_web.php    # Web questions
+│   ├── submit_exam_app.php           # App exam submit
+│   ├── submit_exam_web.php           # Web exam submit
+│   ├── get_user_exam_stats_app.php   # App user stats
+│   └── uploads/profiles/             # Profile images
 └── database/
-    └── config.php  # Database credentials
+    └── config.php                    # Database credentials
 ```
 
 ---
@@ -377,32 +505,45 @@ Run database console in Admin Panel or visit:
 - Prepared statements used to prevent SQL injection
 - HttpOnly, Secure, SameSite cookies
 - CSRF tokens on all forms
-- Rate limiting on login attempts
+- Rate limiting on login attempts (App & Web)
+- App security validation layer (`app_security.php`)
+- Session-based authentication for Web Admin
+- Token-based authentication for App
 - Sensitive data should be moved to `.env` (recommended)
+- Profile image upload validation
 
 ---
 
 ## ⚡ Deployment
 
-### Render
+### Render (PHP Runtime / Docker)
 - Auto deploy from GitHub
-- Build command: `php artisan serve` (not needed for PHP)
+- Dockerfile-based deployment
+- PHP 8.x with Apache
 
 ### Railway
 - MySQL Database
 - TCP Proxy connection
 - Get credentials from Railway dashboard
 
+### Docker (Local)
+```bash
+docker build -t shikhbo-api .
+docker run -p 8080:80 shikhbo-api
+```
+
 ---
 
 ## 🧠 Future Improvements
 
 - JWT Authentication
-- Rate Limiting
 - Email Verification
-- API Versioning
-- Push Notifications
-- Analytics Dashboard
+- API Versioning (v1, v2)
+- Push Notifications (FCM)
+- Advanced Analytics Dashboard
+- Unit & Integration Tests
+- API Documentation (Swagger/OpenAPI)
+- Role-based Access Control (RBAC)
 
 ---
 
