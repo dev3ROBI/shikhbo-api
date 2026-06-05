@@ -1,32 +1,55 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 
-if (isAdminLoggedIn()) {
-    header('Location: /index.php');
+// If already logged in, redirect based on role
+if (isLoggedIn()) {
+    $role = $_SESSION['user_role'] ?? '';
+    $redirect = $_GET['redirect'] ?? '';
+    if ($redirect && $redirect !== 'admin_login') {
+        header('Location: /' . ltrim($redirect, '/'));
+    } elseif ($role === 'admin') {
+        header('Location: /index.php?page=dashboard');
+    } else {
+        header('Location: /index.php');
+    }
     exit;
 }
 
 $error = '';
 $success = '';
 
+// Store redirect parameter from URL
+$redirectParam = isset($_GET['redirect']) ? trim($_GET['redirect']) : '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $error = 'Security token validation failed. Please refresh the page.';
+    } elseif (!validateCaptcha($_POST['captcha'] ?? '')) {
+        $error = 'Incorrect captcha answer. Please try again.';
     } else {
         $email = sanitize($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
-        $result = authenticateAdmin($email, $password);
+        $result = authenticateUser($email, $password);
         
         if ($result['status'] === 'success') {
-            $redirect = $_SESSION['redirect_after_login'] ?? '/index.php';
+            $redirect = $_POST['redirect'] ?: $redirectParam ?: ($_SESSION['redirect_after_login'] ?? '');
             unset($_SESSION['redirect_after_login']);
-            header('Location: ' . $redirect);
+
+            if ($redirect && $redirect !== 'admin_login') {
+                header('Location: /' . ltrim($redirect, '/'));
+            } elseif ($result['role'] === 'admin') {
+                header('Location: /index.php?page=dashboard');
+            } else {
+                header('Location: /index.php');
+            }
             exit;
         } else {
             $error = $result['message'];
         }
     }
 }
+
+generateCaptcha();
 
 if (isset($_GET['logout'])) {
     $success = 'You have been successfully logged out.';
@@ -104,6 +127,9 @@ if (isset($_GET['expired'])) {
         <!-- Login Form -->
         <form method="POST" action="" id="loginForm" autocomplete="off">
             <?php echo getCSRFTokenField(); ?>
+            <?php if ($redirectParam): ?>
+            <input type="hidden" name="redirect" value="<?php echo sanitizeOutput($redirectParam); ?>">
+            <?php endif; ?>
 
             <div class="space-y-4">
                 <div>
@@ -130,6 +156,18 @@ if (isset($_GET['expired'])) {
                     </div>
                 </div>
 
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Captcha: What is <span class="font-bold text-shikhbo-primary"><?php echo getCaptchaQuestion(); ?></span>?
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-shield-halved absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"></i>
+                        <input type="number" name="captcha" required min="0" max="99"
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary focus:border-transparent outline-none transition-all"
+                               placeholder="Enter your answer">
+                    </div>
+                </div>
+
                 <button type="submit"
                         class="w-full bg-shikhbo-primary text-white py-3 rounded-lg font-medium hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all duration-200 flex items-center justify-center space-x-2">
                     <i class="fa-solid fa-right-to-bracket"></i>
@@ -142,6 +180,7 @@ if (isset($_GET['expired'])) {
         <div class="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
             <p>🔒 Secured with CSRF Protection & Rate Limiting</p>
             <p class="mt-1">Shikhbo API v1.0</p>
+            <p class="mt-2"><a href="/index.php" class="text-shikhbo-primary hover:underline"><i class="fa-solid fa-arrow-left mr-1"></i>Back to Home</a></p>
         </div>
     </div>
 

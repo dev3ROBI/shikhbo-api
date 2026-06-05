@@ -1,7 +1,7 @@
 <?php
 /**
- * Shikhbo Admin Panel - Authentication Module
- * Role-Based Access Control (RBAC) for Admin Panel
+ * Shikhbo - Authentication Module
+ * Handles both admin and regular user authentication.
  */
 
 require_once __DIR__ . '/../api/config.php';
@@ -20,6 +20,16 @@ function getDBConnection() {
         $mysqli->set_charset('utf8mb4');
     }
     return $mysqli;
+}
+
+// =======================
+// CHECK ANY USER LOGIN
+// =======================
+function isLoggedIn() {
+    return isset($_SESSION['user_id']) &&
+           isset($_SESSION['user_role']) &&
+           isset($_SESSION['user_last_activity']) &&
+           (time() - $_SESSION['user_last_activity'] < 1800);
 }
 
 // =======================
@@ -46,9 +56,9 @@ function requireAdminAuth() {
 }
 
 // =======================
-// AUTHENTICATE ADMIN
+// AUTHENTICATE USER (any role)
 // =======================
-function authenticateAdmin($email, $password) {
+function authenticateUser($email, $password) {
     $mysqli = getDBConnection();
 
     if (!checkRateLimit($mysqli, $email)) {
@@ -56,7 +66,7 @@ function authenticateAdmin($email, $password) {
     }
 
     $stmt = $mysqli->prepare(
-        "SELECT id, name, email, password, role, status FROM users WHERE email = ? AND role = 'admin' LIMIT 1"
+        "SELECT id, name, email, password, role, status FROM users WHERE email = ? LIMIT 1"
     );
     $stmt->bind_param('s', $email);
     $stmt->execute();
@@ -66,34 +76,70 @@ function authenticateAdmin($email, $password) {
 
     if (!$user) {
         logLoginAttempt($mysqli, $email, 0);
-        return ['status' => 'error', 'message' => 'Invalid admin credentials.'];
+        return ['status' => 'error', 'message' => 'Invalid credentials.'];
     }
 
     if ($user['status'] !== 'active') {
         logLoginAttempt($mysqli, $email, 0);
-        return ['status' => 'error', 'message' => 'Account is suspended. Contact super admin.'];
+        return ['status' => 'error', 'message' => 'Account is suspended.'];
     }
 
     if (!password_verify($password, $user['password'])) {
         logLoginAttempt($mysqli, $email, 0);
-        return ['status' => 'error', 'message' => 'Invalid admin credentials.'];
+        return ['status' => 'error', 'message' => 'Invalid credentials.'];
     }
 
     logLoginAttempt($mysqli, $email, 1);
 
-    $_SESSION['admin_id'] = $user['id'];
-    $_SESSION['admin_name'] = $user['name'];
-    $_SESSION['admin_email'] = $user['email'];
-    $_SESSION['admin_role'] = $user['role'];
-    $_SESSION['admin_last_activity'] = time();
+    // Set generic user session
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['user_name'] = $user['name'];
+    $_SESSION['user_email'] = $user['email'];
+    $_SESSION['user_role'] = $user['role'];
+    $_SESSION['user_last_activity'] = time();
+
+    // If admin, also set admin-specific session
+    if ($user['role'] === 'admin') {
+        $_SESSION['admin_id'] = $user['id'];
+        $_SESSION['admin_name'] = $user['name'];
+        $_SESSION['admin_email'] = $user['email'];
+        $_SESSION['admin_role'] = $user['role'];
+        $_SESSION['admin_last_activity'] = time();
+    }
 
     $updateStmt = $mysqli->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
     $updateStmt->bind_param('i', $user['id']);
     $updateStmt->execute();
     $updateStmt->close();
 
-    return ['status' => 'success', 'message' => 'Login successful.'];
+    return [
+        'status' => 'success',
+        'message' => 'Login successful.',
+        'role' => $user['role']
+    ];
 }
+
+// =======================
+// BACKWARD COMPATIBLE ALIAS
+// =======================
+function authenticateAdmin($email, $password) {
+    return authenticateUser($email, $password);
+}
+
+// =======================
+// GET CURRENT USER
+// =======================
+function getCurrentUser() {
+    if (!isLoggedIn()) return null;
+    return [
+        'id' => $_SESSION['user_id'],
+        'name' => $_SESSION['user_name'],
+        'email' => $_SESSION['user_email'],
+        'role' => $_SESSION['user_role']
+    ];
+}
+
+
 
 // =======================
 // CREATE INITIAL ADMIN

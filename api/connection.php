@@ -42,7 +42,7 @@ $conn = $database->connect();
 if (isset($_GET['test'])) {
     echo json_encode([
         "status" => "success",
-        "message" => "Database connected successfully 🚀",
+        "message" => "Database connected successfully.",
         "db" => DB_NAME,
         "host" => DB_HOST,
         "port" => DB_PORT

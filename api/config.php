@@ -1,13 +1,16 @@
 <?php
 
 // =======================
-// DATABASE CONFIG
+// DATABASE CONFIG (TiDB)
 // =======================
-define('DB_HOST', 'shortline.proxy.rlwy.net');
-define('DB_NAME', 'railway');
-define('DB_USER', 'root');
-define('DB_PASS', 'fjEvGLOytnFmjDPIOXbVtrpLMIGotaFv');
-define('DB_PORT', 14989);
+define('DB_HOST', 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com');
+define('DB_NAME', 'shikhbo');
+define('DB_USER', '21JC5TLVg9DHH77.root');
+define('DB_PASS', 'Ahhx4zufux1iAfC6'); // rotate this immediately
+define('DB_PORT', 4000);
+
+// CA CERT (IMPORTANT for TiDB)
+define('DB_SSL_CA', __DIR__ . '/ca.pem');
 
 // =======================
 // GOOGLE OAUTH

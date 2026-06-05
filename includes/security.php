@@ -111,3 +111,38 @@ function sanitize($data) {
 function sanitizeOutput($data) {
     return htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
 }
+
+// =======================
+// CAPTCHA (Math-based)
+// =======================
+function generateCaptcha() {
+    $num1 = random_int(1, 20);
+    $num2 = random_int(1, 20);
+    $ops = ['+', '-'];
+    $op = $ops[array_rand($ops)];
+
+    if ($op === '-') {
+        if ($num1 < $num2) {
+            list($num1, $num2) = [$num2, $num1];
+        }
+        $answer = $num1 - $num2;
+    } else {
+        $answer = $num1 + $num2;
+    }
+
+    $_SESSION['captcha_answer'] = $answer;
+    $_SESSION['captcha_question'] = "$num1 $op $num2";
+}
+
+function validateCaptcha($userAnswer) {
+    if (!isset($_SESSION['captcha_answer'])) {
+        return false;
+    }
+    $isValid = (int)$userAnswer === (int)$_SESSION['captcha_answer'];
+    unset($_SESSION['captcha_answer'], $_SESSION['captcha_question']);
+    return $isValid;
+}
+
+function getCaptchaQuestion() {
+    return $_SESSION['captcha_question'] ?? '3 + 5';
+}

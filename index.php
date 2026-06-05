@@ -1,50 +1,65 @@
 <?php
 /**
- * Shikhbo Admin Panel — Header + Sidebar (No horizontal nav)
- * Logo visibility: desktop = header logo, mobile = sidebar logo
+ * Shikhbo - Public Landing Page & Admin Panel Router
+ *
+ * - No page param or non-admin pages: renders landing page (public or user-specific)
+ * - Admin pages (?page=dashboard, students, exams, etc.): requires admin auth
  */
+
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/security.php';
-requireAdminAuth();
 
-$admin = getCurrentAdmin();
-$mysqli = getDBConnection();
+// === Handle logout message ===
+$logoutMessage = isset($_GET['logout']) ? true : false;
 
-// ── Fetch notifications & tickets ──
-$notifCount = $mysqli->query("SELECT COUNT(*) AS c FROM login_attempts WHERE success=0 AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)")->fetch_assoc()['c'] ?? 0;
-$recentFailed = $mysqli->query("SELECT email, ip_address, attempt_time FROM login_attempts WHERE success=0 ORDER BY attempt_time DESC LIMIT 8");
+// === Determine page ===
+$page = $_GET['page'] ?? '';
 
-$ticketsTableExists = $mysqli->query("SHOW TABLES LIKE 'support_tickets'")->num_rows > 0;
-$ticketCount = 0; $recentTickets = [];
-if ($ticketsTableExists) {
-    $ticketCount = $mysqli->query("SELECT COUNT(*) AS c FROM support_tickets WHERE status='open'")->fetch_assoc()['c'] ?? 0;
-    $recentTickets = $mysqli->query("SELECT t.*, u.name AS user_name FROM support_tickets t LEFT JOIN users u ON t.user_id=u.id ORDER BY t.created_at DESC LIMIT 10");
-} else {
-    $mysqli->query("CREATE TABLE IF NOT EXISTS support_tickets ( id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED, subject VARCHAR(255), message TEXT, status ENUM('open','in_progress','closed') DEFAULT 'open', created_at DATETIME DEFAULT CURRENT_TIMESTAMP ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-}
-
-// Page routing
-$page = $_GET['page'] ?? 'dashboard';
-$allowedPages = ['dashboard','students','admins','settings','exams','questions','results','categories','database','exam_attempt','app_control'];
-if (!in_array($page, $allowedPages)) $page = 'dashboard';
-$pageFile = __DIR__ . '/pages/' . $page . '.php';
-if (!file_exists($pageFile)) { $page = 'dashboard'; $pageFile = __DIR__ . '/pages/dashboard.php'; }
-$pageTitles = ['dashboard'=>'Admin Dashboard','students'=>'Students Management','admins'=>'Admin Management','settings'=>'System Settings','exams'=>'Exams Management','questions'=>'Question Bank','results'=>'Exam Results','categories'=>'Exam Categories','database'=>'Database Console','exam_attempt'=>'Exam Attempt','app_control'=>'App Control'];
-$pageTitle = $pageTitles[$page] ?? 'Admin Panel';
-
-$navItems = [
-    ['dashboard',    'fa-chart-pie',     'Dashboard'],
-    ['categories',   'fa-layer-group',   'Categories'],
-    ['exams',        'fa-file-alt',      'Exams'],
-    ['questions',    'fa-database',      'Question Bank'],
-    ['exam_attempt', 'fa-play',          'Exam Attempt'],
-    ['students',     'fa-users',         'Students'],
-    ['results',      'fa-chart-bar',     'Results'],
-    ['admins',       'fa-user-gear',     'Admins'],
-    ['app_control',  'fa-mobile-screen', 'App Control'],
-    ['database',     'fa-terminal',      'Database'],
-    ['settings',     'fa-cog',           'Settings'],
+// Admin-only pages that require authentication
+$adminPages = [
+    'dashboard', 'students', 'admins', 'settings', 'exams',
+    'questions', 'results', 'categories', 'database',
+    'exam_attempt', 'app_control'
 ];
+
+if ($page && in_array($page, $adminPages)) {
+    // Admin panel routing - requires admin auth
+    requireAdminAuth();
+    $admin = getCurrentAdmin();
+    $mysqli = getDBConnection();
+
+    // Notifications & tickets
+    $notifCount = $mysqli->query("SELECT COUNT(*) AS c FROM login_attempts WHERE success=0 AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)")->fetch_assoc()['c'] ?? 0;
+    $recentFailed = $mysqli->query("SELECT email, ip_address, attempt_time FROM login_attempts WHERE success=0 ORDER BY attempt_time DESC LIMIT 8");
+
+    $ticketsTableExists = $mysqli->query("SHOW TABLES LIKE 'support_tickets'")->num_rows > 0;
+    $ticketCount = 0; $recentTickets = [];
+    if ($ticketsTableExists) {
+        $ticketCount = $mysqli->query("SELECT COUNT(*) AS c FROM support_tickets WHERE status='open'")->fetch_assoc()['c'] ?? 0;
+        $recentTickets = $mysqli->query("SELECT t.*, u.name AS user_name FROM support_tickets t LEFT JOIN users u ON t.user_id=u.id ORDER BY t.created_at DESC LIMIT 10");
+    } else {
+        $mysqli->query("CREATE TABLE IF NOT EXISTS support_tickets ( id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED, subject VARCHAR(255), message TEXT, status ENUM('open','in_progress','closed') DEFAULT 'open', created_at DATETIME DEFAULT CURRENT_TIMESTAMP ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    if (!in_array($page, $adminPages)) $page = 'dashboard';
+    $pageFile = __DIR__ . '/pages/' . $page . '.php';
+    if (!file_exists($pageFile)) { $page = 'dashboard'; $pageFile = __DIR__ . '/pages/dashboard.php'; }
+    $pageTitles = ['dashboard'=>'Admin Dashboard','students'=>'Students Management','admins'=>'Admin Management','settings'=>'System Settings','exams'=>'Exams Management','questions'=>'Question Bank','results'=>'Exam Results','categories'=>'Exam Categories','database'=>'Database Console','exam_attempt'=>'Exam Attempt','app_control'=>'App Control'];
+    $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
+
+    $navItems = [
+        ['dashboard',    'fa-chart-pie',     'Dashboard'],
+        ['categories',   'fa-layer-group',   'Categories'],
+        ['exams',        'fa-file-alt',      'Exams'],
+        ['questions',    'fa-database',      'Question Bank'],
+        ['exam_attempt', 'fa-play',          'Exam Attempt'],
+        ['students',     'fa-users',         'Students'],
+        ['results',      'fa-chart-bar',     'Results'],
+        ['admins',       'fa-user-gear',     'Admins'],
+        ['app_control',  'fa-mobile-screen', 'App Control'],
+        ['database',     'fa-terminal',      'Database'],
+        ['settings',     'fa-cog',           'Settings'],
+    ];
 ?>
 <!DOCTYPE html>
 <html lang="en" class="">
@@ -53,6 +68,7 @@ $navItems = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo sanitizeOutput($pageTitle); ?> — Shikhbo</title>
     <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/png" href="/image/app_logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
     tailwind.config = {
@@ -73,15 +89,12 @@ $navItems = [
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 font-sans antialiased transition-colors duration-300">
 
-<!-- ===== FULL WIDTH HEADER ===== -->
+<!-- Admin Panel Header -->
 <header class="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-900 dark:to-purple-900 shadow-lg">
     <div class="flex items-center justify-between h-16 px-4 lg:px-8">
-        <!-- Mobile menu toggle for sidebar -->
         <button id="sidebarToggle" class="lg:hidden text-white hover:text-gray-200 p-2 rounded-md flex-shrink-0">
             <i class="fa-solid fa-bars text-xl"></i>
         </button>
-
-        <!-- Logo + Web Name (visible on desktop only) -->
         <div class="hidden lg:flex items-center space-x-3">
             <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg">
                 <i class="fa-solid fa-graduation-cap text-2xl text-white"></i>
@@ -91,17 +104,11 @@ $navItems = [
                 <p class="text-xs text-white/70">Admin Panel</p>
             </div>
         </div>
-
-        <!-- Right side actions -->
         <div class="flex items-center space-x-1 ml-auto">
             <input type="hidden" id="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-
-            <!-- Theme Toggle -->
             <button id="themeToggle" class="relative p-2 text-white/80 hover:text-white rounded-full hover:bg-white/10 transition-colors" title="Toggle dark mode">
                 <i id="themeIcon" class="fa-solid fa-moon text-lg"></i>
             </button>
-
-            <!-- Notifications -->
             <div class="relative" id="notifDropdown">
                 <button id="notifButton" class="relative p-2 text-white/80 hover:text-white rounded-full hover:bg-white/10 transition-colors">
                     <i class="fa-solid fa-bell text-lg"></i>
@@ -118,7 +125,7 @@ $navItems = [
                                 <div class="px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs">
                                     <div class="flex items-start space-x-2">
                                         <i class="fa-solid fa-circle-exclamation text-red-400 mt-0.5 flex-shrink-0"></i>
-                                        <div class="min-w-0"><p class="text-gray-700 dark:text-gray-200 font-medium truncate"><?php echo sanitizeOutput($nf['email']); ?></p><p class="text-gray-400 dark:text-gray-500">IP: <?php echo sanitizeOutput($nf['ip_address']); ?> · <?php echo date('H:i', strtotime($nf['attempt_time'])); ?></p></div>
+                                        <div class="min-w-0"><p class="text-gray-700 dark:text-gray-200 font-medium truncate"><?php echo sanitizeOutput($nf['email']); ?></p><p class="text-gray-400 dark:text-gray-500">IP: <?php echo sanitizeOutput($nf['ip_address']); ?> &middot; <?php echo date('H:i', strtotime($nf['attempt_time'])); ?></p></div>
                                     </div>
                                 </div>
                             <?php endwhile; ?>
@@ -128,8 +135,6 @@ $navItems = [
                     </div>
                 </div>
             </div>
-
-            <!-- Support Tickets -->
             <div class="relative" id="ticketDropdown">
                 <button id="ticketButton" class="relative p-2 text-white/80 hover:text-white rounded-full hover:bg-white/10 transition-colors">
                     <i class="fa-solid fa-ticket text-lg"></i>
@@ -145,7 +150,7 @@ $navItems = [
                             <?php while ($tk = $recentTickets->fetch_assoc()): ?>
                                 <div class="px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs">
                                     <p class="text-gray-700 dark:text-gray-200 font-medium truncate"><?php echo sanitizeOutput($tk['subject']); ?></p>
-                                    <p class="text-gray-400 dark:text-gray-500"><?php echo sanitizeOutput($tk['user_name'] ?? 'Unknown'); ?> · <span class="px-1.5 py-0.5 rounded-full text-[10px] <?php echo $tk['status']==='open'?'bg-orange-100 text-orange-700':'bg-green-100 text-green-700'; ?>"><?php echo ucfirst(str_replace('_',' ',$tk['status'])); ?></span></p>
+                                    <p class="text-gray-400 dark:text-gray-500"><?php echo sanitizeOutput($tk['user_name'] ?? 'Unknown'); ?> &middot; <span class="px-1.5 py-0.5 rounded-full text-[10px] <?php echo $tk['status']==='open'?'bg-orange-100 text-orange-700':'bg-green-100 text-green-700'; ?>"><?php echo ucfirst(str_replace('_',' ',$tk['status'])); ?></span></p>
                                 </div>
                             <?php endwhile; ?>
                         <?php else: ?>
@@ -154,8 +159,6 @@ $navItems = [
                     </div>
                 </div>
             </div>
-
-            <!-- Profile -->
             <div class="relative" id="profileDropdown">
                 <button id="profileButton" class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-white/10 transition-colors">
                     <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin['name']); ?>&background=4F46E5&color=fff&size=32" alt="" class="w-8 h-8 rounded-full flex-shrink-0 border-2 border-white/30">
@@ -171,7 +174,6 @@ $navItems = [
         </div>
     </div>
 
-<!-- Logout Modal -->
     <div id="logoutModal" class="fixed inset-0 z-[60] hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
         <div class="relative flex items-center justify-center min-h-screen p-4">
@@ -195,11 +197,8 @@ $navItems = [
     </div>
 </header>
 
-<!-- ===== MAIN LAYOUT: SIDEBAR + CONTENT ===== -->
 <div class="flex flex-1 overflow-hidden" style="height: calc(100vh - 64px);">
-    <!-- Sidebar -->
     <aside id="sidebar" class="sidebar w-64 bg-white dark:bg-gray-900 shadow-lg flex-shrink-0 overflow-y-auto transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 -translate-x-full fixed inset-y-0 left-0 z-50">
-        <!-- Sidebar header: visible on mobile only (logo + close btn) -->
         <div class="lg:hidden flex items-center justify-between h-16 px-5 border-b border-gray-200 dark:border-gray-700">
             <a href="index.php" class="flex items-center space-x-2 flex-shrink-0">
                 <div class="w-9 h-9 bg-gradient-to-br from-shikhbo-primary to-indigo-400 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -209,15 +208,13 @@ $navItems = [
             </a>
             <button id="sidebarClose" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
-
-        <!-- Navigation (visible always) -->
         <nav class="mt-3 px-2 flex-1 overflow-y-auto" style="max-height: calc(100vh - 140px);">
             <ul class="space-y-0.5">
                 <?php foreach ($navItems as [$navPage, $navIcon, $navLabel]): $isActive = ($page === $navPage); ?>
                     <li>
                         <a href="index.php?page=<?php echo $navPage; ?>"
                            class="nav-link flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200
-                                  <?php echo $isActive ? 'bg-shikhbo-primary text-white shadow-md shadow-indigo-200' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-shikhbo-primary'; ?>">
+                                   <?php echo $isActive ? 'bg-shikhbo-primary text-white shadow-md shadow-indigo-200' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-shikhbo-primary'; ?>">
                             <span class="w-8 h-8 flex items-center justify-center rounded-lg flex-shrink-0
                                          <?php echo $isActive ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'; ?> mr-3">
                                 <i class="fa-solid <?php echo $navIcon; ?> text-sm w-4 text-center"></i>
@@ -237,17 +234,14 @@ $navItems = [
         </div>
     </aside>
 
-    <!-- Main Content -->
     <main id="mainContent" class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 lg:p-8 transition-opacity duration-200" style="scroll-behavior:smooth;">
         <?php include $pageFile; ?>
     </main>
 </div>
 
-<!-- Mobile overlay -->
 <div id="sidebarOverlay" class="fixed inset-0 z-40 bg-black bg-opacity-50 hidden lg:hidden backdrop-blur-sm transition-opacity duration-300"></div>
 <div id="toastContainer" class="fixed bottom-4 right-4 z-[100] flex flex-col-reverse space-y-reverse space-y-2"></div>
 
-<!-- Ticket Modal -->
 <div id="ticketModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeTicketModal()"></div>
     <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
@@ -261,5 +255,42 @@ $navItems = [
     </div>
 </div>
 <script src="/js/custom.js"></script>
+</body>
+</html>
+
+<?php
+    exit;
+}
+
+// === Landing Page ===
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shikhbo - Master Every Exam with Confidence</title>
+    <meta name="description" content="Practice with thousands of questions, track your progress, and ace your exams with Shikhbo.">
+    <link rel="icon" type="image/png" href="/image/app_logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        darkMode: 'class',
+        theme: {
+            extend: {
+                colors: {
+                    'shikhbo-primary': '#4F46E5',
+                    'shikhbo-dark': '#1E293B',
+                }
+            }
+        }
+    }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/css/custom.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 font-sans antialiased">
+    <?php include __DIR__ . '/pages/landing.php'; ?>
+    <script src="/js/custom.js"></script>
 </body>
 </html>
