@@ -79,6 +79,11 @@ function checkRateLimit($mysqli, $email, $maxAttempts = 5, $lockoutMinutes = 15)
          AND success = 0 
          AND attempt_time > ?"
     );
+    
+    if (!$stmt) {
+        return true; // If statement fails, allow login attempt
+    }
+    
     $stmt->bind_param('sss', $email, $ip, $cutoff);
     $stmt->execute();
     $result = $stmt->get_result()->fetch_assoc();
@@ -93,9 +98,11 @@ function logLoginAttempt($mysqli, $email, $success) {
         "INSERT INTO login_attempts (email, ip_address, success, attempt_time) 
          VALUES (?, ?, ?, NOW())"
     );
-    $stmt->bind_param('ssi', $email, $ip, $success);
-    $stmt->execute();
-    $stmt->close();
+    if ($stmt) {
+        $stmt->bind_param('ssi', $email, $ip, $success);
+        $stmt->execute();
+        $stmt->close();
+    }
 }
 
 // =======================

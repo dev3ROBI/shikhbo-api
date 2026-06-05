@@ -8,15 +8,9 @@ class Database {
         try {
             $this->conn = mysqli_init();
 
-            // 🔐 SSL ENABLED CONNECTION (REQUIRED for TiDB)
-            mysqli_ssl_set(
-                $this->conn,
-                NULL,
-                NULL,
-                DB_SSL_CA,
-                NULL,
-                NULL
-            );
+            // Note: SSL removed for shared hosting compatibility
+            // If your host supports SSL, uncomment below:
+            // mysqli_ssl_set($this->conn, NULL, NULL, NULL, NULL, NULL);
 
             $connected = mysqli_real_connect(
                 $this->conn,
@@ -24,9 +18,7 @@ class Database {
                 DB_USER,
                 DB_PASS,
                 DB_NAME,
-                DB_PORT,
-                NULL,
-                MYSQLI_CLIENT_SSL
+                DB_PORT
             );
 
             if (!$connected) {

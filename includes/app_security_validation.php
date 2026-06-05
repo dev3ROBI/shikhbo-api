@@ -53,6 +53,13 @@ function validateAppSecurity($uid, $season, $u_state) {
     
     // 3. Verify user exists in database
     $stmt = $conn->prepare("SELECT id, name, email, status, is_active FROM users WHERE id = ?");
+    if (!$stmt) {
+        return [
+            'valid' => false,
+            'message' => 'Database error occurred',
+            'code' => 'DB_ERROR'
+        ];
+    }
     $stmt->bind_param('i', $uid);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -123,6 +130,13 @@ function verifyToken($token, $userId = null) {
     
     // Verify token exists and not expired
     $stmt = $conn->prepare("SELECT user_id, expires_at FROM user_tokens WHERE token = ?");
+    if (!$stmt) {
+        return [
+            'valid' => false,
+            'message' => 'Database error occurred',
+            'code' => 'DB_ERROR'
+        ];
+    }
     $stmt->bind_param('s', $token);
     $stmt->execute();
     $result = $stmt->get_result();

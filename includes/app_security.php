@@ -52,6 +52,9 @@ function checkApiRateLimit($mysqli, $userId, $clientType = 'app') {
     
     // Get or create user record
     $stmt = $mysqli->prepare("SELECT * FROM `$table` WHERE user_id = ? LIMIT 1");
+    if (!$stmt) {
+        return ['allowed' => false, 'message' => 'Database error. Please try again.'];
+    }
     $stmt->bind_param('s', $userId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -61,9 +64,11 @@ function checkApiRateLimit($mysqli, $userId, $clientType = 'app') {
     if (!$record) {
         $seasonExpires = date('Y-m-d H:i:s', time() + (API_SEASON_TIME * 3600));
         $stmt = $mysqli->prepare("INSERT INTO `$table` (user_id, request_count, season_expires) VALUES (?, 1, ?)");
-        $stmt->bind_param('ss', $userId, $seasonExpires);
-        $stmt->execute();
-        $stmt->close();
+        if ($stmt) {
+            $stmt->bind_param('ss', $userId, $seasonExpires);
+            $stmt->execute();
+            $stmt->close();
+        }
         
         return ['allowed' => true, 'remaining' => API_RATE_LIMIT - 1, 'season_expires' => $seasonExpires];
     }
@@ -76,9 +81,11 @@ function checkApiRateLimit($mysqli, $userId, $clientType = 'app') {
         // Reset for new season
         $seasonExpires = date('Y-m-d H:i:s', time() + (API_SEASON_TIME * 3600));
         $stmt = $mysqli->prepare("UPDATE `$table` SET request_count = 1, season_expires = ? WHERE user_id = ?");
-        $stmt->bind_param('ss', $seasonExpires, $userId);
-        $stmt->execute();
-        $stmt->close();
+        if ($stmt) {
+            $stmt->bind_param('ss', $seasonExpires, $userId);
+            $stmt->execute();
+            $stmt->close();
+        }
         
         return ['allowed' => true, 'remaining' => API_RATE_LIMIT - 1, 'season_expires' => $seasonExpires, 'season_reset' => true];
     }
@@ -94,9 +101,11 @@ function checkApiRateLimit($mysqli, $userId, $clientType = 'app') {
     
     // Increment counter
     $stmt = $mysqli->prepare("UPDATE `$table` SET request_count = request_count + 1, last_request = NOW() WHERE user_id = ?");
-    $stmt->bind_param('s', $userId);
-    $stmt->execute();
-    $stmt->close();
+    if ($stmt) {
+        $stmt->bind_param('s', $userId);
+        $stmt->execute();
+        $stmt->close();
+    }
     
     $remaining = API_RATE_LIMIT - $record['request_count'] - 1;
     
@@ -147,6 +156,9 @@ function isUserActive($mysqli, $userId) {
     }
     
     $stmt = $mysqli->prepare("SELECT id, status, is_active FROM users WHERE id = ? LIMIT 1");
+    if (!$stmt) {
+        return ['active' => false, 'message' => 'Database error'];
+    }
     $stmt->bind_param('s', $userId);
     $stmt->execute();
     $result = $stmt->get_result();

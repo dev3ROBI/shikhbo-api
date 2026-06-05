@@ -1,16 +1,14 @@
 <?php
 
 // =======================
-// DATABASE CONFIG (TiDB)
+// DATABASE CONFIG
 // =======================
-define('DB_HOST', 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com');
-define('DB_NAME', 'shikhbo');
-define('DB_USER', '21JC5TLVg9DHH77.root');
-define('DB_PASS', 'Ahhx4zufux1iAfC6'); // rotate this immediately
-define('DB_PORT', 4000);
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'rgdbcbvr_shikhbo');
+define('DB_USER', 'rgdbcbvr_shikhbo');
+define('DB_PASS', 'pc0eVU3R7+dG1*');
+define('DB_PORT', 3306);
 
-// CA CERT (IMPORTANT for TiDB)
-define('DB_SSL_CA', __DIR__ . '/ca.pem');
 
 // =======================
 // GOOGLE OAUTH

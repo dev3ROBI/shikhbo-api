@@ -14,8 +14,8 @@ function getDBConnection() {
     static $mysqli = null;
     if ($mysqli === null) {
         $mysqli = mysqli_init();
-        $mysqli->ssl_set(null, null, null, null, null);
-        $mysqli->real_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT, null, MYSQLI_CLIENT_SSL);
+        // Remove SSL enforcement for shared hosting compatibility
+        $mysqli->real_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
         if ($mysqli->connect_error) {
             die("Database connection failed: " . $mysqli->connect_error);
         }
@@ -70,6 +70,9 @@ function authenticateUser($email, $password) {
     $stmt = $mysqli->prepare(
         "SELECT id, name, email, password, role, status FROM users WHERE email = ? LIMIT 1"
     );
+    if (!$stmt) {
+        return ['status' => 'error', 'message' => 'Database error. Please try again.'];
+    }
     $stmt->bind_param('s', $email);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -110,9 +113,11 @@ function authenticateUser($email, $password) {
     }
 
     $updateStmt = $mysqli->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
-    $updateStmt->bind_param('i', $user['id']);
-    $updateStmt->execute();
-    $updateStmt->close();
+    if ($updateStmt) {
+        $updateStmt->bind_param('i', $user['id']);
+        $updateStmt->execute();
+        $updateStmt->close();
+    }
 
     return [
         'status' => 'success',
@@ -156,10 +161,12 @@ function createInitialAdmin($mysqli) {
             "INSERT INTO users (name, email, password, role, status, referral_code) 
              VALUES (?, ?, ?, 'admin', 'active', ?)"
         );
-        $referral = 'ADMIN' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
-        $stmt->bind_param('ssss', $name, $email, $password, $referral);
-        $stmt->execute();
-        $stmt->close();
+        if ($stmt) {
+            $referral = 'ADMIN' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+            $stmt->bind_param('ssss', $name, $email, $password, $referral);
+            $stmt->execute();
+            $stmt->close();
+        }
         return ['email' => $email, 'password' => 'Admin@123#Secure'];
     }
     return null;
