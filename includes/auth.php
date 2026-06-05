@@ -13,7 +13,9 @@ require_once __DIR__ . '/security.php';
 function getDBConnection() {
     static $mysqli = null;
     if ($mysqli === null) {
-        $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+        $mysqli = mysqli_init();
+        $mysqli->ssl_set(null, null, null, null, null);
+        $mysqli->real_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT, null, MYSQLI_CLIENT_SSL);
         if ($mysqli->connect_error) {
             die("Database connection failed: " . $mysqli->connect_error);
         }
