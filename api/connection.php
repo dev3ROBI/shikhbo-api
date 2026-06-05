@@ -6,16 +6,31 @@ class Database {
 
     public function connect() {
         try {
-            $this->conn = new mysqli(
+            $this->conn = mysqli_init();
+
+            // 🔐 SSL ENABLED CONNECTION (REQUIRED for TiDB)
+            mysqli_ssl_set(
+                $this->conn,
+                NULL,
+                NULL,
+                DB_SSL_CA,
+                NULL,
+                NULL
+            );
+
+            $connected = mysqli_real_connect(
+                $this->conn,
                 DB_HOST,
                 DB_USER,
                 DB_PASS,
                 DB_NAME,
-                DB_PORT
+                DB_PORT,
+                NULL,
+                MYSQLI_CLIENT_SSL
             );
 
-            if ($this->conn->connect_error) {
-                throw new Exception($this->conn->connect_error);
+            if (!$connected) {
+                throw new Exception(mysqli_connect_error());
             }
 
             $this->conn->set_charset("utf8mb4");
