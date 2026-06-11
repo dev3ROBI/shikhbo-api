@@ -98,61 +98,67 @@ $recentStudents = $mysqli->query("SELECT id, name, email, status, created_at FRO
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 mb-8 border border-gray-100 dark:border-gray-700">
-        <div class="flex items-center gap-2 mb-4">
-            <i class="fa-solid fa-bolt text-yellow-500"></i>
-            <h3 class="font-semibold text-gray-800 dark:text-gray-100">Quick Actions</h3>
+    <!-- Page Links + Menu Navigation -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-5 mb-8">
+        <!-- All Page Links -->
+        <div class="lg:col-span-3 bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-2 mb-4">
+                <i class="fa-solid fa-bolt text-yellow-500"></i>
+                <h3 class="font-semibold text-gray-800 dark:text-gray-100">Quick Actions</h3>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <?php
+                $allPages = [
+                    ['exams',        'fa-file-alt',      'Exams',        'bg-blue-50 dark:bg-blue-900/20', 'text-blue-500'],
+                    ['questions',    'fa-database',      'Questions',    'bg-green-50 dark:bg-green-900/20', 'text-green-500'],
+                    ['categories',   'fa-layer-group',   'Categories',   'bg-purple-50 dark:bg-purple-900/20', 'text-purple-500'],
+                    ['students',     'fa-users',         'Students',     'bg-orange-50 dark:bg-orange-900/20', 'text-orange-500'],
+                    ['results',      'fa-chart-bar',     'Results',      'bg-indigo-50 dark:bg-indigo-900/20', 'text-indigo-500'],
+                    ['admins',       'fa-user-gear',     'Admins',       'bg-yellow-50 dark:bg-yellow-900/20', 'text-yellow-500'],
+                    ['exam_attempt', 'fa-play',          'Exam Attempt', 'bg-cyan-50 dark:bg-cyan-900/20', 'text-cyan-500'],
+                    ['app_control',  'fa-mobile-screen', 'App Control',  'bg-pink-50 dark:bg-pink-900/20', 'text-pink-500'],
+                    ['database',     'fa-terminal',      'Database',     'bg-gray-100 dark:bg-gray-700', 'text-gray-600 dark:text-gray-300'],
+                    ['settings',     'fa-cog',           'Settings',     'bg-gray-100 dark:bg-gray-700', 'text-gray-600 dark:text-gray-300'],
+                ];
+                foreach ($allPages as $p):
+                    if (!in_array($p[0], $allowedPages)) continue;
+                ?>
+                <a href="index.php?page=<?php echo $p[0]; ?>" class="quick-action">
+                    <div class="w-12 h-12 mx-auto mb-2 rounded-xl <?php echo $p[3]; ?> flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fa-solid <?php echo $p[1]; ?> <?php echo $p[4]; ?> text-lg"></i>
+                    </div>
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300"><?php echo $p[2]; ?></span>
+                </a>
+                <?php endforeach; ?>
+            </div>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-            <a href="index.php?page=exams" class="quick-action">
-                <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-plus-circle text-blue-500 text-lg"></i>
-                </div>
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300">New Exam</span>
-            </a>
-            <a href="index.php?page=questions" class="quick-action">
-                <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-circle-plus text-green-500 text-lg"></i>
-                </div>
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Add Question</span>
-            </a>
-            <a href="index.php?page=categories" class="quick-action">
-                <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-layer-group text-purple-500 text-lg"></i>
-                </div>
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Categories</span>
-            </a>
-            <a href="index.php?page=students" class="quick-action">
-                <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-user-plus text-orange-500 text-lg"></i>
-                </div>
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Students</span>
-            </a>
-            <a href="index.php?page=results" class="quick-action">
-                <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-chart-bar text-indigo-500 text-lg"></i>
-                </div>
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Results</span>
-            </a>
-            <a href="index.php?page=admins" class="quick-action">
-                <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-user-gear text-yellow-500 text-lg"></i>
-                </div>
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Admins</span>
-            </a>
-            <a href="index.php?page=database" class="quick-action">
-                <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-terminal text-gray-600 dark:text-gray-300 text-lg"></i>
-                </div>
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Database</span>
-            </a>
-            <a href="index.php?page=settings" class="quick-action">
-                <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-gear text-gray-600 dark:text-gray-300 text-lg"></i>
-                </div>
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Settings</span>
-            </a>
+
+        <!-- Menu List -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-2 mb-3">
+                <i class="fa-solid fa-bars text-shikhbo-primary"></i>
+                <h3 class="font-semibold text-gray-800 dark:text-gray-100">Navigation</h3>
+            </div>
+            <nav class="space-y-0.5">
+                <?php $firstGroup = true; foreach ($allowedPages as $ap):
+                    $label = '';
+                    $icon = '';
+                    foreach ($allPages as $p) {
+                        if ($p[0] === $ap) { $label = $p[2]; $icon = $p[1]; break; }
+                    }
+                    if (!$label) continue;
+                    $isActive = ($page === $ap);
+                ?>
+                <a href="index.php?page=<?php echo $ap; ?>"
+                   class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all <?php echo $isActive ? 'bg-shikhbo-primary text-white shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-shikhbo-primary'; ?>">
+                    <span class="w-8 h-8 flex items-center justify-center rounded-lg mr-3 <?php echo $isActive ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'; ?>">
+                        <i class="fa-solid <?php echo $icon; ?> text-sm w-4 text-center"></i>
+                    </span>
+                    <span><?php echo $label; ?></span>
+                    <?php if ($isActive): ?><span class="ml-auto w-1.5 h-5 bg-shikhbo-primary rounded-full"></span><?php endif; ?>
+                </a>
+                <?php endforeach; ?>
+            </nav>
         </div>
     </div>
 

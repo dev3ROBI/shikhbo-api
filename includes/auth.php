@@ -38,7 +38,7 @@ function isLoggedIn() {
 // ADMIN-LEVEL ROLES
 // =======================
 function isAdminRole($role) {
-    return in_array($role, ['Administrator', 'Moderator', 'Editor']);
+    return in_array(trim($role), ['Administrator', 'Moderator', 'Editor', 'admin']);
 }
 
 // =======================
@@ -75,7 +75,7 @@ function authenticateUser($email, $password) {
     }
 
     $stmt = $mysqli->prepare(
-        "SELECT id, name, email, password, role, status FROM users WHERE email = ? LIMIT 1"
+        "SELECT id, name, email, password, role, status, profile_image FROM users WHERE email = ? LIMIT 1"
     );
     if (!$stmt) {
         return ['status' => 'error', 'message' => 'Database error. Please try again.'];
@@ -104,10 +104,12 @@ function authenticateUser($email, $password) {
     logLoginAttempt($mysqli, $email, 1);
 
     // Set generic user session
+    $user['role'] = trim($user['role']);
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_name'] = $user['name'];
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_role'] = $user['role'];
+    $_SESSION['user_profile_image'] = $user['profile_image'] ?? null;
     $_SESSION['user_last_activity'] = time();
 
     // If admin-level role, also set admin-specific session
@@ -149,7 +151,8 @@ function getCurrentUser() {
         'id' => $_SESSION['user_id'],
         'name' => $_SESSION['user_name'],
         'email' => $_SESSION['user_email'],
-        'role' => $_SESSION['user_role']
+        'role' => $_SESSION['user_role'],
+        'profile_image' => $_SESSION['user_profile_image'] ?? null
     ];
 }
 

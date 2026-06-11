@@ -22,10 +22,26 @@ $adminPages = [
     'exam_attempt', 'app_control'
 ];
 
+// Role-based page permissions
+$rolePages = [
+    'Administrator' => ['dashboard','students','admins','settings','exams','questions','results','categories','database','exam_attempt','app_control'],
+    'Moderator'     => ['dashboard','exams','questions','categories','exam_attempt','results'],
+    'Editor'        => ['dashboard','categories','questions','exam_attempt'],
+];
+
+$adminRole = trim($_SESSION['admin_role'] ?? 'Member');
+
 if ($page && in_array($page, $adminPages)) {
     // Admin panel routing - requires admin auth
     requireAdminAuth();
     $admin = getCurrentAdmin();
+
+    // Check role-based page access
+    $allowedPages = $rolePages[$adminRole] ?? [];
+    if (!in_array($page, $allowedPages)) {
+        $page = 'dashboard';
+    }
+
     $mysqli = getDBConnection();
 
     // Notifications & tickets
@@ -60,6 +76,11 @@ if ($page && in_array($page, $adminPages)) {
         ['database',     'fa-terminal',      'Database'],
         ['settings',     'fa-cog',           'Settings'],
     ];
+
+    // Filter sidebar by role permissions
+    $navItems = array_filter($navItems, function($item) use ($allowedPages) {
+        return in_array($item[0], $allowedPages);
+    });
 ?>
 <!DOCTYPE html>
 <html lang="en" class="">

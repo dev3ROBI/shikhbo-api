@@ -30,17 +30,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = authenticateUser($email, $password);
         
         if ($result['status'] === 'success') {
-            $redirect = $_POST['redirect'] ?: $redirectParam ?: ($_SESSION['redirect_after_login'] ?? '');
-            unset($_SESSION['redirect_after_login']);
-
-            if ($redirect && $redirect !== 'admin_login') {
-                header('Location: /' . ltrim($redirect, '/'));
-            } elseif (isAdminRole($result['role'])) {
-                header('Location: /index.php?page=dashboard');
+            if (isAdminRole($result['role'])) {
+                $redirect = $_POST['redirect'] ?: $redirectParam ?: ($_SESSION['redirect_after_login'] ?? '');
+                unset($_SESSION['redirect_after_login']);
+                if ($redirect && $redirect !== 'admin_login') {
+                    header('Location: /' . ltrim($redirect, '/'));
+                } else {
+                    header('Location: /index.php');
+                }
+                exit;
             } else {
-                header('Location: /index.php');
+                $showMemberModal = true;
             }
-            exit;
         } else {
             $error = $result['message'];
         }
@@ -116,6 +117,30 @@ if (isset($_GET['expired'])) {
         }
         .g_id_signin > div {
             margin: 0 auto !important;
+        }
+        @keyframes gFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes gSlideUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.92); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes gDot {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+            40% { transform: scale(1.2); opacity: 1; }
+        }
+        @keyframes adBlurIn {
+            from { background: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
+            to { background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        }
+        @keyframes adShow {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     </style>
 </head>
@@ -230,6 +255,42 @@ if (isset($_GET['expired'])) {
         </div>
     </div>
 
+    <?php if (isset($showMemberModal)): ?>
+    <!-- Member Access Modal -->
+    <div id="memberModal" style="position:fixed;inset:0;z-index:200;">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0);backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);animation:adBlurIn 0.3s ease forwards;"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:1rem;animation:adShow 0.01s ease 0.15s forwards;opacity:0;">
+            <div style="background:#fff;border-radius:20px;width:100%;max-width:380px;padding:2rem;box-shadow:0 32px 64px rgba(0,0,0,0.2);text-align:center;animation:gSlideUp 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.15s both;">
+                <div style="width:64px;height:64px;margin:0 auto 1rem;background:#FEE2E2;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    <svg style="width:32px;height:32px;" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <h3 style="font-size:1.15rem;font-weight:700;color:#1F2937;margin-bottom:0.25rem;">Access Restricted</h3>
+                <p style="font-size:0.875rem;color:#6B7280;margin-bottom:0.75rem;">Your account has <strong>Member</strong> permissions.</p>
+                <div style="background:#F9FAFB;border-radius:12px;padding:0.75rem 1rem;margin-bottom:1.25rem;text-align:left;font-size:0.8rem;color:#6B7280;line-height:1.5;">
+                    <p style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;"><span style="color:#DC2626;">&cross;</span> Admin panel & dashboard access</p>
+                    <p style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;"><span style="color:#DC2626;">&cross;</span> Student & exam management</p>
+                    <p style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;"><span style="color:#DC2626;">&cross;</span> System & app settings</p>
+                    <p style="display:flex;align-items:flex-start;gap:6px;margin-bottom:0;"><span style="color:#059669;">&check;</span> Practice exams & learning content</p>
+                </div>
+                <p style="font-size:0.8rem;color:#9CA3AF;margin-bottom:1.25rem;">Redirecting to the app in <span id="redirectCountdown" style="font-weight:600;color:#4F46E5;">5</span> seconds...</p>
+                <div style="display:flex;gap:8px;">
+                    <a href="/index.php" style="flex:1;padding:0.625rem;background:#4F46E5;color:#fff;border-radius:10px;font-size:0.875rem;font-weight:600;text-decoration:none;display:inline-block;text-align:center;">Go to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function() {
+            var sec = 5, el = document.getElementById('redirectCountdown');
+            var t = setInterval(function() {
+                sec--;
+                if (el) el.textContent = sec;
+                if (sec <= 0) { clearInterval(t); window.location.href = '/index.php'; }
+            }, 1000);
+        })();
+    </script>
+    <?php endif; ?>
+
     <script>
         function togglePassword() {
             const pwd = document.getElementById('password');
@@ -251,8 +312,31 @@ if (isset($_GET['expired'])) {
 
         function handleGoogleCredential(response) {
             const overlay = document.createElement('div');
-            overlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm';
-            overlay.innerHTML = '<div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl"><div class="w-8 h-8 border-3 border-shikhbo-primary border-t-transparent rounded-full animate-spin mx-auto"></div><p class="text-sm text-gray-500 dark:text-gray-400 mt-3">Signing in with Google...</p></div>';
+            overlay.id = 'google-signin-overlay';
+            overlay.innerHTML = `
+                <div class="fixed inset-0 z-50 flex items-center justify-center" style="background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: gFadeIn 0.3s ease">
+                    <div style="animation: gSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); background: #fff; border-radius: 20px; padding: 2rem; width: 320px; max-width: 90vw; box-shadow: 0 32px 64px rgba(0,0,0,0.2); text-align: center;">
+                        <div class="dark:hidden">
+                            <div style="width: 56px; height: 56px; margin: 0 auto 1rem; background: linear-gradient(135deg, #4285F4, #34A853); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                                <svg viewBox="0 0 24 24" style="width: 28px; height: 28px;"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                            </div>
+                        </div>
+                        <div class="hidden dark:block">
+                            <div style="width: 56px; height: 56px; margin: 0 auto 1rem; background: #1E293B; border-radius: 16px; display: flex; align-items: center; justify-content: center; border: 2px solid #334155;">
+                                <svg viewBox="0 0 24 24" style="width: 28px; height: 28px;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                            </div>
+                        </div>
+                        <h3 style="font-size: 1.1rem; font-weight: 700; color: #1F2937; margin-bottom: 0.25rem;">Signing in with Google</h3>
+                        <p style="font-size: 0.875rem; color: #6B7280; margin-bottom: 1.25rem;">Please wait while we verify your account</p>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <span style="width: 6px; height: 6px; background: #4285F4; border-radius: 50%; animation: gDot 0.8s ease-in-out infinite;"></span>
+                            <span style="width: 6px; height: 6px; background: #EA4335; border-radius: 50%; animation: gDot 0.8s ease-in-out infinite 0.15s;"></span>
+                            <span style="width: 6px; height: 6px; background: #FBBC05; border-radius: 50%; animation: gDot 0.8s ease-in-out infinite 0.3s;"></span>
+                            <span style="width: 6px; height: 6px; background: #34A853; border-radius: 50%; animation: gDot 0.8s ease-in-out infinite 0.45s;"></span>
+                        </div>
+                    </div>
+                </div>
+            `;
             document.body.appendChild(overlay);
 
             fetch('/api/google_login_web.php', {

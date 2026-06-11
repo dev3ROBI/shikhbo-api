@@ -99,6 +99,43 @@
         animation: dlPulse 1s ease-in-out infinite;
     }
 
+    /* ── Access Denied Modal ── */
+    .ad-modal {
+        position: fixed; inset: 0; z-index: 100;
+        display: flex; align-items: center; justify-content: center;
+        padding: 1rem;
+        pointer-events: none;
+    }
+    .ad-modal .ad-backdrop {
+        position: absolute; inset: 0;
+        background: rgba(0,0,0,0);
+        backdrop-filter: blur(0px);
+        -webkit-backdrop-filter: blur(0px);
+        transition: background 0.3s ease, backdrop-filter 0.3s ease;
+    }
+    .ad-modal.open { pointer-events: auto; }
+    .ad-modal.open .ad-backdrop {
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+    .ad-modal .ad-panel {
+        position: relative;
+        background: #fff; border-radius: 1.25rem;
+        width: 100%; max-width: 380px;
+        padding: 2rem;
+        box-shadow: 0 32px 64px rgba(0,0,0,0.2);
+        opacity: 0;
+        transform: translateY(30px) scale(0.92);
+        transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition-delay: 0.15s;
+    }
+    .dark .ad-modal .ad-panel { background: #1E293B; }
+    .ad-modal.open .ad-panel {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
     .download-btn {
         transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
@@ -216,6 +253,12 @@
     .dark .site-nav.scrolled .nav-brand-text {
         color: #F3F4F6;
     }
+    .site-nav.scrolled .nav-user-text {
+        color: #1F2937;
+    }
+    .dark .site-nav.scrolled .nav-user-text {
+        color: #F3F4F6;
+    }
     .site-nav.scrolled .login-btn-nav {
         background: #2563EB;
         border-color: #2563EB;
@@ -223,6 +266,12 @@
     }
     .site-nav.scrolled .login-btn-nav:hover {
         background: #1D4ED8;
+    }
+    .site-nav.scrolled #menuToggle {
+        color: #1F2937;
+    }
+    .dark .site-nav.scrolled #menuToggle {
+        color: #F3F4F6;
     }
 
     .login-btn-nav {
@@ -258,86 +307,13 @@
 </style>
 
 <div class="min-h-screen bg-white dark:bg-gray-900 landing-scroll">
-    <?php if (isLoggedIn()): $user = getCurrentUser(); ?>
-    <!-- LOGGED IN STATE -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="anim-fade-up show">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-8">
-            <div class="flex items-center justify-between flex-wrap gap-4">
-                <div class="flex items-center space-x-4">
-                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($user['name']); ?>&background=2563EB&color=fff&size=48" alt="" class="w-12 h-12 rounded-full">
-                    <div>
-                        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">Welcome back, <?php echo sanitizeOutput($user['name']); ?></h1>
-                        <p class="text-sm text-gray-500 dark:text-gray-400"><?php echo sanitizeOutput($user['email']); ?> &middot; <?php echo ucfirst(sanitizeOutput($user['role'])); ?> Account</p>
-                    </div>
-                </div>
-                <a href="/pages/logout.php" class="inline-flex items-center px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
-                    <i class="fa-solid fa-right-from-bracket mr-2"></i> Logout
-                </a>
-            </div>
-        </div>
-        </div>
+<?php
+$loggedInUser = isLoggedIn() ? getCurrentUser() : null;
+$isAdminUser = $loggedInUser && isAdminRole($loggedInUser['role']);
+$isMemberUser = $loggedInUser && !$isAdminUser;
+?>
 
-        <?php if (isAdminLoggedIn()): $admin = getCurrentAdmin(); ?>
-        <div class="anim-fade-up show delay-1">
-        <div class="admin-section rounded-2xl p-6 sm:p-8 mb-8">
-            <div class="flex items-center space-x-3 mb-6">
-                <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                    <i class="fa-solid fa-shield-halved text-xl text-white"></i>
-                </div>
-                <div>
-                    <h2 class="text-lg font-bold text-white">Admin Panel</h2>
-                    <p class="text-sm text-white/70">Manage your application</p>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                <?php
-                $adminLinks = [
-                    ['dashboard', 'fa-chart-pie', 'Dashboard'],
-                    ['students', 'fa-users', 'Students'],
-                    ['exams', 'fa-file-alt', 'Exams'],
-                    ['questions', 'fa-database', 'Questions'],
-                    ['categories', 'fa-layer-group', 'Categories'],
-                    ['app_control', 'fa-mobile-screen', 'App Control'],
-                ];
-                foreach ($adminLinks as $i => [$linkPage, $linkIcon, $linkLabel]):
-                ?>
-                <a href="/index.php?page=<?php echo $linkPage; ?>" class="admin-link-card bg-white/10 hover:bg-white/20 rounded-xl p-4 text-center transition-all group" style="animation: fadeInUp 0.5s ease <?php echo 0.1 * $i; ?>s both;">
-                    <div class="w-10 h-10 mx-auto bg-white/10 group-hover:bg-white/20 rounded-lg flex items-center justify-center mb-2 transition-colors">
-                        <i class="fa-solid <?php echo $linkIcon; ?> text-white text-lg"></i>
-                    </div>
-                    <p class="text-sm font-medium text-white"><?php echo $linkLabel; ?></p>
-                </a>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        </div>
-        <p class="text-gray-500 dark:text-gray-400 anim-fade-up show delay-3">Use the links above to manage students, exams, questions, and application settings.</p>
-        <?php endif; ?>
 
-        <?php if (!isAdminLoggedIn()): ?>
-        <div class="anim-fade-up show delay-1">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sm:p-8">
-            <div class="flex items-center space-x-3 mb-4">
-                <img src="/image/app_logo.png" alt="Shikhbo" class="logo-img-sm">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">Shikhbo Learning App</h2>
-            </div>
-            <p class="text-gray-500 dark:text-gray-400 mb-6">Access your exams, track your progress, and continue learning on the go. Download the Shikhbo Android app from the section below.</p>
-            <div class="flex flex-col sm:flex-row gap-4">
-                <button onclick="openDownloadModal('apk')" class="download-btn inline-flex items-center justify-center px-6 py-3 bg-gray-900 dark:bg-gray-700 text-white rounded-xl font-medium hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors cursor-pointer">
-                    <i class="fa-brands fa-android text-xl mr-3"></i> Download APK
-                </button>
-                <button onclick="openDownloadModal('play')" class="download-btn inline-flex items-center justify-center px-6 py-3 bg-black text-white rounded-xl font-medium hover:bg-gray-900 transition-colors cursor-pointer">
-                    <i class="fa-brands fa-google-play text-xl mr-3"></i> Google Play
-                </button>
-            </div>
-        </div>
-        </div>
-        <?php endif; ?>
-    </div>
-
-    <?php else: ?>
-    <!-- PUBLIC / NOT LOGGED IN -->
 
     <!-- Mobile Overlay -->
     <div class="mobile-overlay" id="mobileOverlay"></div>
@@ -360,6 +336,11 @@
             <a href="#features" class="mobile-nav-link flex items-center px-3 py-2.5 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors text-sm">
                 <i class="fa-solid fa-star w-6 text-blue-500 text-xs"></i> Features
             </a>
+            <?php if ($isAdminUser): ?>
+            <a href="/index.php?page=dashboard" class="mobile-nav-link flex items-center px-3 py-2.5 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors text-sm">
+                <i class="fa-solid fa-gauge-high w-6 text-indigo-500 text-xs"></i> Dashboard
+            </a>
+            <?php endif; ?>
             <a href="#download" class="mobile-nav-link flex items-center px-3 py-2.5 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors text-sm">
                 <i class="fa-solid fa-download w-6 text-blue-500 text-xs"></i> Download
             </a>
@@ -370,9 +351,19 @@
                 <i class="fa-solid fa-file-lines w-6 text-blue-500 text-xs"></i> Terms
             </a>
             <div class="pt-3 mt-3 border-t border-gray-100 dark:border-gray-800">
+                <?php if ($loggedInUser): ?>
+                <div class="flex items-center justify-between px-3 py-2">
+                    <div class="flex items-center space-x-2.5">
+                        <img src="<?php echo $loggedInUser['profile_image'] ?? '/api/uploads/profiles/profile.png'; ?>" alt="" class="w-7 h-7 rounded-full object-cover" onerror="this.src='/api/uploads/profiles/profile.png'">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-200"><?php echo sanitizeOutput($loggedInUser['name']); ?></span>
+                    </div>
+                    <a href="/pages/logout.php" onclick="openLogoutModal();return false;" class="text-gray-400 hover:text-red-500 transition-colors text-sm" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></a>
+                </div>
+                <?php else: ?>
                 <a href="/pages/admin_login.php" class="flex items-center justify-center px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm">
                     <i class="fa-solid fa-lock mr-2"></i> Login
                 </a>
+                <?php endif; ?>
             </div>
         </nav>
     </div>
@@ -388,14 +379,25 @@
                 <div class="hidden md:flex items-center hero-fade-in delay-1">
                     <a href="#home" class="nav-link">Home</a>
                     <a href="#features" class="nav-link">Features</a>
+                    <?php if ($isAdminUser): ?>
+                    <a href="/index.php?page=dashboard" class="nav-link">Dashboard</a>
+                    <?php endif; ?>
                     <a href="#download" class="nav-link">Download</a>
                     <a href="#privacy" class="nav-link">Privacy</a>
                     <a href="#terms" class="nav-link">Terms</a>
                 </div>
                 <div class="flex items-center hero-fade-in delay-1">
+                    <?php if ($loggedInUser): ?>
+                    <div class="hidden sm:flex items-center space-x-2.5 px-3 py-1.5">
+                        <img src="<?php echo $loggedInUser['profile_image'] ?? '/api/uploads/profiles/profile.png'; ?>" alt="" class="w-7 h-7 rounded-full border-2 border-white/30 object-cover" onerror="this.src='/api/uploads/profiles/profile.png'">
+                        <span class="text-sm font-medium text-white nav-user-text"><?php echo sanitizeOutput($loggedInUser['name']); ?></span>
+                        <a href="/pages/logout.php" onclick="openLogoutModal();return false;" class="ml-1 text-white/60 hover:text-white transition-colors text-sm" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></a>
+                    </div>
+                    <?php else: ?>
                     <a href="/pages/admin_login.php" class="login-btn-nav hidden sm:inline-flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-all border border-white/20">
                         <i class="fa-solid fa-lock mr-2"></i> Login
                     </a>
+                    <?php endif; ?>
                     <button id="menuToggle" class="md:hidden flex items-center justify-center w-10 h-10 text-white hover:bg-white/10 rounded-lg transition-colors ml-2">
                         <i class="fa-solid fa-bars text-xl"></i>
                     </button>
@@ -541,6 +543,47 @@
         </div>
     </section>
 
+    <!-- Access Denied Modal -->
+    <div class="ad-modal" id="accessDeniedModal">
+        <div class="ad-backdrop" onclick="closeAccessDenied()"></div>
+        <div class="ad-panel">
+            <div class="text-center">
+                <div style="width:64px;height:64px;margin:0 auto 1rem;background:#FEE2E2;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    <svg style="width:32px;height:32px;" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Access Restricted</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Your account has <strong>Member</strong> permissions.</p>
+            </div>
+            <div class="mt-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 text-left text-xs text-gray-600 dark:text-gray-400 space-y-2 leading-relaxed">
+                <p><span class="text-red-500">&cross;</span> Admin panel &amp; dashboard access</p>
+                <p><span class="text-red-500">&cross;</span> Student &amp; exam management</p>
+                <p><span class="text-red-500">&cross;</span> System &amp; app settings</p>
+                <p class="pt-2 border-t border-gray-200 dark:border-gray-700"><span class="text-emerald-500">&check;</span> Practice exams &amp; learning content is available in the app</p>
+            </div>
+            <div class="mt-5 flex gap-3">
+                <button onclick="closeAccessDenied()" class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Confirm Modal -->
+    <div class="ad-modal" id="logoutModal">
+        <div class="ad-backdrop" onclick="closeLogoutModal()"></div>
+        <div class="ad-panel">
+            <div class="text-center">
+                <div style="width:64px;height:64px;margin:0 auto 1rem;background:#FEE2E2;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    <svg style="width:32px;height:32px;" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Logout</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Are you sure you want to logout?</p>
+            </div>
+            <div class="mt-5 flex gap-3">
+                <button onclick="closeLogoutModal()" class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Cancel</button>
+                <a href="/pages/logout.php" id="logoutConfirmBtn" class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors text-center">Logout</a>
+            </div>
+        </div>
+    </div>
+
     <!-- Download Modal -->
     <div class="dl-modal" id="dlModal">
         <div class="dl-backdrop" onclick="closeDownloadModal()"></div>
@@ -581,23 +624,24 @@
             <p class="text-gray-500 text-sm">&copy; <?php echo date('Y'); ?> Shikhbo. All rights reserved.</p>
         </div>
     </footer>
-    <?php endif; ?>
 </div>
 
 <script>
 (function() {
     // Navbar scroll
     const nav = document.getElementById('siteNav');
-    let ticking = false;
-    function updateNav() {
-        if (window.scrollY > 60) nav.classList.add('scrolled');
-        else nav.classList.remove('scrolled');
-        ticking = false;
+    if (nav) {
+        let ticking = false;
+        function updateNav() {
+            if (window.scrollY > 60) nav.classList.add('scrolled');
+            else nav.classList.remove('scrolled');
+            ticking = false;
+        }
+        window.addEventListener('scroll', () => {
+            if (!ticking) { requestAnimationFrame(updateNav); ticking = true; }
+        }, { passive: true });
+        updateNav();
     }
-    window.addEventListener('scroll', () => {
-        if (!ticking) { requestAnimationFrame(updateNav); ticking = true; }
-    }, { passive: true });
-    updateNav();
 
     // Mobile menu
     const menuToggle = document.getElementById('menuToggle');
@@ -605,13 +649,14 @@
     const mobileOverlay = document.getElementById('mobileOverlay');
     const mobileClose = document.getElementById('mobileClose');
 
-    function openMenu() { mobileMenu.classList.add('open'); mobileOverlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
-    function closeMenu() { mobileMenu.classList.remove('open'); mobileOverlay.classList.remove('open'); document.body.style.overflow = ''; }
-
-    if (menuToggle) menuToggle.addEventListener('click', openMenu);
-    if (mobileClose) mobileClose.addEventListener('click', closeMenu);
-    if (mobileOverlay) mobileOverlay.addEventListener('click', closeMenu);
-    document.querySelectorAll('.mobile-nav-link').forEach(l => l.addEventListener('click', closeMenu));
+    if (menuToggle && mobileMenu && mobileOverlay) {
+        function openMenu() { mobileMenu.classList.add('open'); mobileOverlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
+        function closeMenu() { mobileMenu.classList.remove('open'); mobileOverlay.classList.remove('open'); document.body.style.overflow = ''; }
+        menuToggle.addEventListener('click', openMenu);
+        if (mobileClose) mobileClose.addEventListener('click', closeMenu);
+        mobileOverlay.addEventListener('click', closeMenu);
+        document.querySelectorAll('.mobile-nav-link').forEach(l => l.addEventListener('click', closeMenu));
+    }
 
     // Active nav link
     const navLinks = document.querySelectorAll('.nav-link');
@@ -790,4 +835,37 @@ function finishDownload(bar, pct, status, speed, remain, actions) {
         `;
     }, 800);
 }
+
+// ── Access Denied Modal (blur first, then slide) ──
+function openAccessDenied() {
+    const m = document.getElementById('accessDeniedModal');
+    if (!m) return;
+    document.body.style.overflow = 'hidden';
+    // Phase 1: show backdrop with blur transition
+    m.classList.add('open');
+    // Phase 2: panel slides up (handled by CSS transition-delay)
+}
+function closeAccessDenied() {
+    const m = document.getElementById('accessDeniedModal');
+    if (!m) return;
+    m.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// ── Logout Confirm Modal ──
+function openLogoutModal() {
+    const m = document.getElementById('logoutModal');
+    if (!m) return;
+    document.body.style.overflow = 'hidden';
+    m.classList.add('open');
+}
+function closeLogoutModal() {
+    const m = document.getElementById('logoutModal');
+    if (!m) return;
+    m.classList.remove('open');
+    document.body.style.overflow = '';
+}
+<?php if ($isMemberUser): ?>
+document.addEventListener('DOMContentLoaded', function() { setTimeout(openAccessDenied, 500); });
+<?php endif; ?>
 </script>
