@@ -174,7 +174,7 @@
     .site-nav .nav-link.active,
     .site-nav .nav-link.active:hover {
         background: transparent;
-        color: inherit;
+        color: rgba(255,255,255,0.8);
     }
     .site-nav .nav-link::after {
         content: '';
