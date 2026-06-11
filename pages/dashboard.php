@@ -15,6 +15,9 @@ $passRate = $totalResults > 0 ? round(($passCount / $totalResults) * 100, 1) : 0
 
 $recentResults = $mysqli->query("SELECT r.id, u.name AS student_name, e.title AS exam_title, r.score, r.total_marks, r.percentage, r.status, r.completed_at FROM exam_results r JOIN users u ON r.user_id = u.id JOIN exams e ON r.exam_id = e.id ORDER BY r.completed_at DESC LIMIT 5");
 $recentStudents = $mysqli->query("SELECT id, name, email, status, created_at FROM users WHERE (role IS NULL OR role = '' OR role = 'user') ORDER BY created_at DESC LIMIT 5");
+
+$page = isset($_GET['page']) ? htmlspecialchars(trim($_GET['page']), ENT_QUOTES, 'UTF-8') : 'dashboard';
+$allowedPages = ['exams', 'questions', 'categories', 'students', 'results', 'admins', 'exam_attempt', 'app_control', 'database', 'settings'];
 ?>
 <div class="page-content">
     <!-- Page Header -->
