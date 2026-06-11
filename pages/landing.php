@@ -171,6 +171,11 @@
         color: #fff;
         background: rgba(255,255,255,0.08);
     }
+    .site-nav .nav-link.active,
+    .site-nav .nav-link.active:hover {
+        background: transparent;
+        color: inherit;
+    }
     .site-nav .nav-link::after {
         content: '';
         position: absolute;
@@ -193,6 +198,14 @@
     }
     .site-nav.scrolled .nav-link:hover {
         color: #2563EB;
+    }
+    .site-nav.scrolled .nav-link.active,
+    .site-nav.scrolled .nav-link.active:hover {
+        color: #4B5563;
+    }
+    .dark .site-nav.scrolled .nav-link.active,
+    .dark .site-nav.scrolled .nav-link.active:hover {
+        color: #D1D5DB;
     }
     .site-nav.scrolled .nav-link::after {
         background: #2563EB;
