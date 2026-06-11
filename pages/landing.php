@@ -185,17 +185,13 @@
     .site-nav .nav-link.active::after {
         width: 60%;
     }
-    .site-nav .nav-link.active {
-        color: #fff;
-    }
     .site-nav.scrolled .nav-link {
         color: #4B5563;
     }
     .dark .site-nav.scrolled .nav-link {
         color: #D1D5DB;
     }
-    .site-nav.scrolled .nav-link:hover,
-    .site-nav.scrolled .nav-link.active {
+    .site-nav.scrolled .nav-link:hover {
         color: #2563EB;
     }
     .site-nav.scrolled .nav-link::after {
