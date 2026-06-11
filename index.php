@@ -287,10 +287,8 @@ if ($page && in_array($page, $adminPages)) {
     }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/css/custom.css">
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 font-sans antialiased">
     <?php include __DIR__ . '/pages/landing.php'; ?>
-    <script src="/js/custom.js"></script>
 </body>
 </html>
