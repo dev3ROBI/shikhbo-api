@@ -35,12 +35,19 @@ function isLoggedIn() {
 }
 
 // =======================
+// ADMIN-LEVEL ROLES
+// =======================
+function isAdminRole($role) {
+    return in_array($role, ['Administrator', 'Moderator', 'Editor']);
+}
+
+// =======================
 // CHECK ADMIN LOGIN
 // =======================
 function isAdminLoggedIn() {
     return isset($_SESSION['admin_id']) && 
            isset($_SESSION['admin_role']) && 
-           $_SESSION['admin_role'] === 'admin' &&
+           isAdminRole($_SESSION['admin_role']) &&
            isset($_SESSION['admin_last_activity']) &&
            (time() - $_SESSION['admin_last_activity'] < 1800);
 }
@@ -103,8 +110,8 @@ function authenticateUser($email, $password) {
     $_SESSION['user_role'] = $user['role'];
     $_SESSION['user_last_activity'] = time();
 
-    // If admin, also set admin-specific session
-    if ($user['role'] === 'admin') {
+    // If admin-level role, also set admin-specific session
+    if (isAdminRole($user['role'])) {
         $_SESSION['admin_id'] = $user['id'];
         $_SESSION['admin_name'] = $user['name'];
         $_SESSION['admin_email'] = $user['email'];
@@ -152,14 +159,14 @@ function getCurrentUser() {
 // CREATE INITIAL ADMIN
 // =======================
 function createInitialAdmin($mysqli) {
-    $check = $mysqli->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+    $check = $mysqli->query("SELECT id FROM users WHERE role IN ('Administrator','Moderator','Editor') LIMIT 1");
     if ($check->num_rows == 0) {
         $name = 'Super Admin';
         $email = 'admin@shikhbo.com';
         $password = password_hash('Admin@123#Secure', PASSWORD_BCRYPT, ['cost' => 12]);
         $stmt = $mysqli->prepare(
             "INSERT INTO users (name, email, password, role, status, referral_code) 
-             VALUES (?, ?, ?, 'admin', 'active', ?)"
+             VALUES (?, ?, ?, 'Administrator', 'active', ?)"
         );
         if ($stmt) {
             $referral = 'ADMIN' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
@@ -188,6 +195,6 @@ function getCurrentAdmin() {
 // =======================
 // CHECK ROLE PERMISSION
 // =======================
-function hasPermission($requiredRole = 'admin') {
+function hasPermission($requiredRole = 'Administrator') {
     return isAdminLoggedIn() && $_SESSION['admin_role'] === $requiredRole;
 }
