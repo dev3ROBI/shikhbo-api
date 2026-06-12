@@ -48,7 +48,7 @@ try {
     $conn = getAppSecurityConn();
     $conn->set_charset('utf8mb4');
 
-    // Get user profile - use only existing columns
+    // Get user profile
     $stmt = $conn->prepare("SELECT id, name, email, profile_image, referral_code, language, tagline, streak, member_since, is_premium, status, created_at FROM users WHERE id = ?");
     $stmt->bind_param("i", $uid);
     $stmt->execute();
@@ -67,6 +67,51 @@ try {
         $memberSince = date('Y-m-d', strtotime($user['created_at']));
     }
 
+    // Get today's check-in status (server date)
+    $serverDate = date('Y-m-d');
+    $checkedInToday = false;
+    $checkinStmt = $conn->prepare("SELECT id FROM daily_checkins WHERE user_id = ? AND checkin_date = ?");
+    $checkinStmt->bind_param("is", $uid, $serverDate);
+    $checkinStmt->execute();
+    $checkinResult = $checkinStmt->get_result();
+    if ($checkinResult->num_rows > 0) {
+        $checkedInToday = true;
+    }
+    $checkinStmt->close();
+
+    // Get total check-in count
+    $totalCheckins = 0;
+    $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM daily_checkins WHERE user_id = ?");
+    $countStmt->bind_param("i", $uid);
+    $countStmt->execute();
+    $countResult = $countStmt->get_result();
+    if ($countResult->num_rows > 0) {
+        $totalCheckins = (int)$countResult->fetch_assoc()['total'];
+    }
+    $countStmt->close();
+
+    // Get total XP from check-ins
+    $totalXp = 0;
+    $xpStmt = $conn->prepare("SELECT COALESCE(SUM(xp_earned), 0) as total_xp FROM daily_checkins WHERE user_id = ?");
+    $xpStmt->bind_param("i", $uid);
+    $xpStmt->execute();
+    $xpResult = $xpStmt->get_result();
+    if ($xpResult->num_rows > 0) {
+        $totalXp = (int)$xpResult->fetch_assoc()['total_xp'];
+    }
+    $xpStmt->close();
+
+    // Get last 7 days of check-ins for weekly view
+    $weekCheckins = [];
+    $weekStmt = $conn->prepare("SELECT checkin_date, xp_earned FROM daily_checkins WHERE user_id = ? AND checkin_date >= DATE_SUB(?, INTERVAL 7 DAY) ORDER BY checkin_date ASC");
+    $weekStmt->bind_param("is", $uid, $serverDate);
+    $weekStmt->execute();
+    $weekResult = $weekStmt->get_result();
+    while ($row = $weekResult->fetch_assoc()) {
+        $weekCheckins[] = $row['checkin_date'];
+    }
+    $weekStmt->close();
+
     echo json_encode([
         'status' => 'success',
         'user' => [
@@ -80,6 +125,12 @@ try {
             'streak' => (int)$user['streak'],
             'member_since' => $memberSince ?? date('Y-m-d'),
             'is_premium' => (bool)$user['is_premium']
+        ],
+        'checkin' => [
+            'checked_in_today' => $checkedInToday,
+            'total_checkins' => $totalCheckins,
+            'total_xp' => $totalXp,
+            'week_checkins' => $weekCheckins
         ],
         'access' => 'unlimited'
     ], JSON_UNESCAPED_UNICODE);

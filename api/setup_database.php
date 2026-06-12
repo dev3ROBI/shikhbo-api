@@ -283,6 +283,23 @@ CREATE TABLE IF NOT EXISTS exam_results (
 ");
 
 // =======================
+// DAILY CHECK-INS TABLE
+// =======================
+$server->query("
+CREATE TABLE IF NOT EXISTS daily_checkins (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    checkin_date DATE NOT NULL,
+    xp_earned INT DEFAULT 50,
+    streak INT DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_checkin (user_id, checkin_date),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_date (user_id, checkin_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+");
+
+// =======================
 // SUBJECTS TABLE (if not exists)
 // =======================
 $server->query("
