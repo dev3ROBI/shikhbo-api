@@ -19,14 +19,14 @@ $page = $_GET['page'] ?? '';
 $adminPages = [
     'dashboard', 'students', 'admins', 'settings', 'exams',
     'questions', 'results', 'categories', 'database',
-    'exam_attempt', 'app_control'
+    'exam_attempt', 'app_control', 'courses'
 ];
 
 // Role-based page permissions
 $rolePages = [
-    'Administrator' => ['dashboard','students','admins','settings','exams','questions','results','categories','database','exam_attempt','app_control'],
-    'Moderator'     => ['dashboard','exams','questions','categories','exam_attempt','results'],
-    'Editor'        => ['dashboard','categories','questions','exam_attempt'],
+    'Administrator' => ['dashboard','students','admins','settings','exams','questions','results','categories','database','exam_attempt','app_control','courses'],
+    'Moderator'     => ['dashboard','exams','questions','categories','exam_attempt','results','courses'],
+    'Editor'        => ['dashboard','categories','questions','exam_attempt','courses'],
 ];
 
 $adminRole = trim($_SESSION['admin_role'] ?? 'Member');
@@ -60,12 +60,13 @@ if ($page && in_array($page, $adminPages)) {
     if (!in_array($page, $adminPages)) $page = 'dashboard';
     $pageFile = __DIR__ . '/pages/' . $page . '.php';
     if (!file_exists($pageFile)) { $page = 'dashboard'; $pageFile = __DIR__ . '/pages/dashboard.php'; }
-    $pageTitles = ['dashboard'=>'Admin Dashboard','students'=>'Students Management','admins'=>'Admin Management','settings'=>'System Settings','exams'=>'Exams Management','questions'=>'Question Bank','results'=>'Exam Results','categories'=>'Exam Categories','database'=>'Database Console','exam_attempt'=>'Exam Attempt','app_control'=>'App Control'];
+    $pageTitles = ['dashboard'=>'Admin Dashboard','students'=>'Students Management','admins'=>'Admin Management','settings'=>'System Settings','exams'=>'Exams Management','questions'=>'Question Bank','results'=>'Exam Results','categories'=>'Exam Categories','database'=>'Database Console','exam_attempt'=>'Exam Attempt','app_control'=>'App Control','courses'=>'Courses Management'];
     $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
 
     $navItems = [
         ['dashboard',    'fa-chart-pie',     'Dashboard'],
         ['categories',   'fa-layer-group',   'Categories'],
+        ['courses',      'fa-graduation-cap','Courses'],
         ['exams',        'fa-file-alt',      'Exams'],
         ['questions',    'fa-database',      'Question Bank'],
         ['exam_attempt', 'fa-play',          'Exam Attempt'],
