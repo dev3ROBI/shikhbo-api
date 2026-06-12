@@ -1,6 +1,11 @@
 <?php
 
 // =======================
+// TIMEZONE (Bangladesh UTC+6)
+// =======================
+date_default_timezone_set('Asia/Dhaka');
+
+// =======================
 // DATABASE CONFIG
 // =======================
 define('DB_HOST', 'localhost');
