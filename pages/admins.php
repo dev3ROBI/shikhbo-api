@@ -129,14 +129,14 @@ $admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at
 <div id="addAdminModal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeAddModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md pointer-events-auto">
-            <div class="modal-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Add New Admin</h3>
-                <button onclick="closeAddModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+        <div class="modal-content w-full max-w-md pointer-events-auto">
+            <div class="modal-header flex items-center justify-between sticky top-0 z-10">
+                <h3 class="text-lg font-semibold">Add New Admin</h3>
+                <button onclick="closeAddModal()" class="p-2 rounded-lg transition-all">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <form method="POST" class="modal-body-scroll p-6 space-y-4">
+            <form method="POST" class="modal-body-scroll space-y-4">
                 <?php echo getCSRFTokenField(); ?>
                 <input type="hidden" name="action" value="add_admin">
                 <div>
@@ -151,9 +151,9 @@ $admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
                     <input type="password" name="password" required minlength="8" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced">
                 </div>
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" onclick="closeAddModal()" class="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
-                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">Create Admin</button>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeAddModal()" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-save">Create Admin</button>
                 </div>
             </form>
         </div>
@@ -164,14 +164,14 @@ $admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at
 <div id="editAdminModal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeEditModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md pointer-events-auto">
-            <div class="modal-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Edit Admin</h3>
-                <button onclick="closeEditModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+        <div class="modal-content w-full max-w-md pointer-events-auto">
+            <div class="modal-header flex items-center justify-between sticky top-0 z-10">
+                <h3 class="text-lg font-semibold">Edit Admin</h3>
+                <button onclick="closeEditModal()" class="p-2 rounded-lg transition-all">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <form method="POST" class="modal-body-scroll p-6 space-y-4">
+            <form method="POST" class="modal-body-scroll space-y-4">
                 <?php echo getCSRFTokenField(); ?>
                 <input type="hidden" name="action" value="edit_admin">
                 <input type="hidden" name="admin_id" id="edit-id">
@@ -191,9 +191,9 @@ $admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at
                         <option value="inactive">Inactive</option>
                     </select>
                 </div>
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" onclick="closeEditModal()" class="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
-                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">Save Changes</button>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeEditModal()" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-save">Save Changes</button>
                 </div>
             </form>
         </div>

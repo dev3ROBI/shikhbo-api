@@ -222,14 +222,14 @@ $stmt->close();
 <div id="viewStudentModal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeViewModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto">
-            <div class="modal-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Student Details</h3>
-                <button onclick="closeViewModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+        <div class="modal-content w-full max-w-lg pointer-events-auto">
+            <div class="modal-header flex items-center justify-between sticky top-0 z-10">
+                <h3 class="text-lg font-semibold">Student Details</h3>
+                <button onclick="closeViewModal()" class="p-2 rounded-lg transition-all">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <div id="viewStudentContent" class="modal-body-scroll p-6"></div>
+            <div id="viewStudentContent" class="modal-body-scroll"></div>
         </div>
     </div>
 </div>
@@ -238,14 +238,14 @@ $stmt->close();
 <div id="editStudentModal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeEditModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto">
-            <div class="modal-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Edit Student</h3>
-                <button onclick="closeEditModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+        <div class="modal-content w-full max-w-lg pointer-events-auto">
+            <div class="modal-header flex items-center justify-between sticky top-0 z-10">
+                <h3 class="text-lg font-semibold">Edit Student</h3>
+                <button onclick="closeEditModal()" class="p-2 rounded-lg transition-all">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <form method="POST" class="modal-body-scroll p-6 space-y-4">
+            <form method="POST" class="modal-body-scroll space-y-4">
                 <?php echo getCSRFTokenField(); ?>
                 <input type="hidden" name="action" value="edit_student">
                 <input type="hidden" name="student_id" id="editStudentId">
@@ -265,9 +265,9 @@ $stmt->close();
                         <option value="inactive">Inactive</option>
                     </select>
                 </div>
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" onclick="closeEditModal()" class="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
-                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">Save Changes</button>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeEditModal()" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-save">Save Changes</button>
                 </div>
             </form>
         </div>

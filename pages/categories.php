@@ -152,14 +152,14 @@ function renderRows($tree,$level=0){
 <div id="categoryModal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md pointer-events-auto">
-            <div class="modal-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100" id="catModalTitle">Add Category</h3>
-                <button onclick="closeModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+        <div class="modal-content w-full max-w-md pointer-events-auto">
+            <div class="modal-header flex items-center justify-between sticky top-0 z-10">
+                <h3 class="text-lg font-semibold" id="catModalTitle">Add Category</h3>
+                <button onclick="closeModal()" class="p-2 rounded-lg transition-all">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <form method="POST" class="modal-body-scroll p-6 space-y-4" id="catForm">
+            <form method="POST" class="modal-body-scroll space-y-4" id="catForm">
                 <?php echo getCSRFTokenField();?>
                 <input type="hidden" name="action" id="catAction" value="add_category">
                 <input type="hidden" name="category_id" id="catId">
@@ -208,9 +208,9 @@ function renderRows($tree,$level=0){
                         <option value="0">No</option>
                     </select>
                 </div>
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
-                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">Save</button>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-save">Save</button>
                 </div>
             </form>
         </div>
