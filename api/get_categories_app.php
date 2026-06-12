@@ -16,32 +16,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Get Bearer token from header
 $token = getBearerToken();
 
-// Get user info from query params
 $uid = $_GET['uid'] ?? null;
 $season = $_GET['season'] ?? null;
 $u_state = $_GET['u_state'] ?? null;
 
-// Validate security params
 $security = requireAppSecurity($uid, $season, $u_state);
 
-// Optionally verify token matches user
 if ($token) {
     $tokenVerify = verifyToken($token, $uid);
-    if (!$tokenVerify['valid']) {
-        // Token invalid but user still has access via security params
-        // This is fine - security params already validate the user
-    }
 }
 
 $conn = getAppSecurityConn();
 
-$result = $conn->query("SELECT id, name, slug, parent_id, level, category_type FROM exam_categories ORDER BY parent_id, sort_order, id");
+$result = $conn->query("
+    SELECT ec.id, ec.name, ec.slug, ec.parent_id, ec.level, ec.category_type,
+           ec.icon, ec.description,
+           (SELECT COUNT(*) FROM exams e WHERE e.category_id = ec.id AND e.status = 'active') AS exam_count
+    FROM exam_categories ec
+    ORDER BY ec.parent_id, ec.sort_order, ec.id
+");
 
 $catsById = [];
 while ($row = $result->fetch_assoc()) {
+    $row['exam_count'] = (int)$row['exam_count'];
     $catsById[$row['id']] = $row;
 }
 
