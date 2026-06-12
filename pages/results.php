@@ -66,7 +66,7 @@ $avgScore = $mysqli->query("SELECT AVG(percentage) as a FROM exam_results")->fet
 
     <!-- Desktop Table -->
     <div class="hidden sm:block bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto table-wrapper">
             <table class="w-full">
                 <thead class="table-header">
                     <tr>

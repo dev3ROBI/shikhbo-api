@@ -5,7 +5,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) { $error = 'Security token validation failed.'; }
     else {
         $action = $_POST['action'] ?? '';
-        if ($action === 'add_category') {
+        if ($action === 'add_course') {
             $title = sanitize($_POST['title']);
             $desc = sanitize($_POST['description'] ?? '');
             $shortDesc = sanitize($_POST['short_description'] ?? '');
@@ -21,9 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $isFeatured = intval($_POST['is_featured'] ?? 0);
             $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $title)) . '-' . substr(uniqid(), -6);
             $stmt = $mysqli->prepare("INSERT INTO courses (title,slug,short_description,description,cover_image,price,is_free,category_id,parent_course_id,course_type,difficulty,duration_hours,is_active,is_featured) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-            $stmt->bind_param('sssssdiiissiii', $title, $slug, $shortDesc, $desc, $coverImage, $price, $isFree, $categoryId, $parentCourseId, $courseType, $difficulty, $durationHours, $isActive, $isFeatured);
+            $stmt->bind_param('sssssdsssssiii', $title, $slug, $shortDesc, $desc, $coverImage, $price, $isFree, $categoryId, $parentCourseId, $courseType, $difficulty, $durationHours, $isActive, $isFeatured);
             $stmt->execute() ? $success = "Course added successfully." : $error = $stmt->error; $stmt->close();
-        } elseif ($action === 'edit_category') {
+        } elseif ($action === 'edit_course') {
             $courseId = intval($_POST['course_id']);
             $title = sanitize($_POST['title']);
             $desc = sanitize($_POST['description'] ?? '');
@@ -39,14 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $isActive = intval($_POST['is_active'] ?? 1);
             $isFeatured = intval($_POST['is_featured'] ?? 0);
             $stmt = $mysqli->prepare("UPDATE courses SET title=?,short_description=?,description=?,cover_image=?,price=?,is_free=?,category_id=?,parent_course_id=?,course_type=?,difficulty=?,duration_hours=?,is_active=?,is_featured=? WHERE id=?");
-            $stmt->bind_param('ssssdiiissiiii', $title, $shortDesc, $desc, $coverImage, $price, $isFree, $categoryId, $parentCourseId, $courseType, $difficulty, $durationHours, $isActive, $isFeatured, $courseId);
+            $stmt->bind_param('sssssdsssssiiii', $title, $shortDesc, $desc, $coverImage, $price, $isFree, $categoryId, $parentCourseId, $courseType, $difficulty, $durationHours, $isActive, $isFeatured, $courseId);
             $stmt->execute() ? $success = "Course updated successfully." : $error = $stmt->error; $stmt->close();
-        } elseif ($action === 'delete_category') {
+        } elseif ($action === 'delete_course') {
             $courseId = intval($_POST['course_id']);
-            $parent = $mysqli->query("SELECT parent_course_id FROM courses WHERE id=$courseId")->fetch_assoc();
-            $np = $parent['parent_course_id'] ?? null;
-            if ($np) $mysqli->query("UPDATE courses SET parent_course_id=$np WHERE parent_course_id=$courseId");
-            else $mysqli->query("UPDATE courses SET parent_course_id=NULL WHERE parent_course_id=$courseId");
+            $result = $mysqli->query("SELECT parent_course_id FROM courses WHERE id=$courseId");
+            $parent = $result ? $result->fetch_assoc() : null;
+            $np = $parent ? ($parent['parent_course_id'] ?? null) : null;
+            if ($np) { $stmt = $mysqli->prepare("UPDATE courses SET parent_course_id=? WHERE parent_course_id=?"); $stmt->bind_param('ii', $np, $courseId); $stmt->execute(); $stmt->close(); }
+            else { $stmt = $mysqli->prepare("UPDATE courses SET parent_course_id=NULL WHERE parent_course_id=?"); $stmt->bind_param('i', $courseId); $stmt->execute(); $stmt->close(); }
             $stmt = $mysqli->prepare("DELETE FROM courses WHERE id=?"); $stmt->bind_param('i', $courseId);
             $stmt->execute() ? $success = "Course deleted successfully." : $error = $stmt->error; $stmt->close();
         }
@@ -55,12 +56,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $courses = $mysqli->query("SELECT c.*, ec.name AS category_name FROM courses c LEFT JOIN exam_categories ec ON c.category_id = ec.id ORDER BY c.id DESC");
 
-$totalCourses = $mysqli->query("SELECT COUNT(*) AS c FROM courses")->fetch_assoc()['c'];
-$freeCourses = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_free=1")->fetch_assoc()['c'];
-$paidCourses = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_free=0")->fetch_assoc()['c'];
-$featuredCount = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_featured=1")->fetch_assoc()['c'];
+$totalCourses = 0; $freeCourses = 0; $paidCourses = 0; $featuredCount = 0;
+$r = $mysqli->query("SELECT COUNT(*) AS c FROM courses"); if ($r) $totalCourses = $r->fetch_assoc()['c'];
+$r = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_free=1"); if ($r) $freeCourses = $r->fetch_assoc()['c'];
+$r = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_free=0"); if ($r) $paidCourses = $r->fetch_assoc()['c'];
+$r = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_featured=1"); if ($r) $featuredCount = $r->fetch_assoc()['c'];
 
 $allCoursesList = $mysqli->query("SELECT id, title FROM courses ORDER BY title");
+if (!$allCoursesList) { $allCoursesList = []; }
 ?>
 
 <div class="page-content">
@@ -133,7 +136,7 @@ $allCoursesList = $mysqli->query("SELECT id, title FROM courses ORDER BY title")
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto table-wrapper">
             <table class="w-full">
                 <thead class="table-header">
                     <tr>
@@ -211,7 +214,7 @@ $allCoursesList = $mysqli->query("SELECT id, title FROM courses ORDER BY title")
             </div>
             <form method="POST" class="p-6 space-y-4" id="courseForm">
                 <?php echo getCSRFTokenField();?>
-                <input type="hidden" name="action" id="courseAction" value="add_category">
+                <input type="hidden" name="action" id="courseAction" value="add_course">
                 <input type="hidden" name="course_id" id="courseId">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2">
@@ -305,12 +308,12 @@ $allCoursesList = $mysqli->query("SELECT id, title FROM courses ORDER BY title")
     </div>
 </div>
 
-<form id="deleteCourseForm" method="POST" class="hidden"><?php echo getCSRFTokenField();?><input type="hidden" name="action" value="delete_category"><input type="hidden" name="course_id" id="deleteCourseId"></form>
+<form id="deleteCourseForm" method="POST" class="hidden"><?php echo getCSRFTokenField();?><input type="hidden" name="action" value="delete_course"><input type="hidden" name="course_id" id="deleteCourseId"></form>
 
 <script>
 function openAddModal() {
     document.getElementById('courseModalTitle').textContent = 'Add Course';
-    document.getElementById('courseAction').value = 'add_category';
+    document.getElementById('courseAction').value = 'add_course';
     document.getElementById('courseId').value = '';
     document.getElementById('courseTitle').value = '';
     document.getElementById('courseDesc').value = '';
@@ -329,7 +332,7 @@ function openAddModal() {
 }
 function editCourse(course) {
     document.getElementById('courseModalTitle').textContent = 'Edit Course';
-    document.getElementById('courseAction').value = 'edit_category';
+    document.getElementById('courseAction').value = 'edit_course';
     document.getElementById('courseId').value = course.id;
     document.getElementById('courseTitle').value = course.title;
     document.getElementById('courseDesc').value = course.description || '';

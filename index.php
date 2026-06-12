@@ -45,19 +45,22 @@ if ($page && in_array($page, $adminPages)) {
     $mysqli = getDBConnection();
 
     // Notifications & tickets
-    $notifCount = $mysqli->query("SELECT COUNT(*) AS c FROM login_attempts WHERE success=0 AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)")->fetch_assoc()['c'] ?? 0;
+    $notifCount = 0; $recentFailed = null;
+    $r = $mysqli->query("SELECT COUNT(*) AS c FROM login_attempts WHERE success=0 AND attempt_time > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+    if ($r) $notifCount = $r->fetch_assoc()['c'] ?? 0;
     $recentFailed = $mysqli->query("SELECT email, ip_address, attempt_time FROM login_attempts WHERE success=0 ORDER BY attempt_time DESC LIMIT 8");
 
-    $ticketsTableExists = $mysqli->query("SHOW TABLES LIKE 'support_tickets'")->num_rows > 0;
-    $ticketCount = 0; $recentTickets = [];
+    $ticketsTableExists = false; $ticketCount = 0; $recentTickets = [];
+    $r = $mysqli->query("SHOW TABLES LIKE 'support_tickets'");
+    if ($r) $ticketsTableExists = $r->num_rows > 0;
     if ($ticketsTableExists) {
-        $ticketCount = $mysqli->query("SELECT COUNT(*) AS c FROM support_tickets WHERE status='open'")->fetch_assoc()['c'] ?? 0;
+        $r = $mysqli->query("SELECT COUNT(*) AS c FROM support_tickets WHERE status='open'");
+        if ($r) $ticketCount = $r->fetch_assoc()['c'] ?? 0;
         $recentTickets = $mysqli->query("SELECT t.*, u.name AS user_name FROM support_tickets t LEFT JOIN users u ON t.user_id=u.id ORDER BY t.created_at DESC LIMIT 10");
     } else {
         $mysqli->query("CREATE TABLE IF NOT EXISTS support_tickets ( id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED, subject VARCHAR(255), message TEXT, status ENUM('open','in_progress','closed') DEFAULT 'open', created_at DATETIME DEFAULT CURRENT_TIMESTAMP ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
-    if (!in_array($page, $adminPages)) $page = 'dashboard';
     $pageFile = __DIR__ . '/pages/' . $page . '.php';
     if (!file_exists($pageFile)) { $page = 'dashboard'; $pageFile = __DIR__ . '/pages/dashboard.php'; }
     $pageTitles = ['dashboard'=>'Admin Dashboard','students'=>'Students Management','admins'=>'Admin Management','settings'=>'System Settings','exams'=>'Exams Management','questions'=>'Question Bank','results'=>'Exam Results','categories'=>'Exam Categories','database'=>'Database Console','exam_attempt'=>'Exam Attempt','app_control'=>'App Control','courses'=>'Courses Management'];

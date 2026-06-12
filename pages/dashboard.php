@@ -178,7 +178,7 @@ $allowedPages = ['exams', 'questions', 'categories', 'students', 'results', 'adm
                 </div>
                 <a href="index.php?page=results" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium">View All</a>
             </div>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto table-wrapper">
                 <table class="w-full">
                     <thead class="table-header">
                         <tr>

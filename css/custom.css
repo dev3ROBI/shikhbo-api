@@ -43,6 +43,11 @@ body {
 .sidebar {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.sidebar::-webkit-scrollbar {
+    display: none;
 }
 .sidebar.open {
     transform: translateX(0);
@@ -114,7 +119,7 @@ html {
 /* ---------- Table Enhancements ---------- */
 .table-container {
     border-radius: 16px;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 .table-header {
     background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
@@ -123,7 +128,7 @@ html {
     background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
 }
 .table-row {
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
 }
 .table-row:hover {
     background-color: #F8FAFC;
@@ -131,6 +136,10 @@ html {
 }
 .dark .table-row:hover {
     background-color: #334155;
+}
+.overflow-x-auto {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* ---------- Navigation ---------- */
@@ -316,6 +325,21 @@ input[type="checkbox"] {
 }
 .modal-content {
     animation: modalIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: calc(100vh - 2rem);
+    display: flex;
+    flex-direction: column;
+}
+.modal-content > form,
+.modal-content > .modal-body {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+@media (max-width: 639px) {
+    .modal-content {
+        max-height: calc(100vh - 1rem);
+        margin: 0.5rem;
+    }
 }
 @keyframes modalIn {
     from {
@@ -446,6 +470,7 @@ input[type="checkbox"] {
 /* ---------- Page Transitions ---------- */
 .page-content {
     animation: fadeIn 0.3s ease;
+    overflow-x: hidden;
 }
 @keyframes fadeIn {
     from { opacity: 0; }
@@ -565,6 +590,56 @@ input[type="checkbox"] {
 .dark textarea:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* ---------- Select2-like Enhanced Selects ---------- */
+select option {
+    padding: 6px 10px;
+}
+select option:checked {
+    font-weight: 600;
+}
+
+/* ---------- Card Polish ---------- */
+.card {
+    transition: all 0.2s ease;
+}
+
+/* ---------- Loading States ---------- */
+.btn-loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+.btn-loading .btn-text {
+    visibility: hidden;
+}
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    top: 50%;
+    left: 50%;
+    margin: -8px 0 0 -8px;
+}
+
+/* ---------- Responsive Table Improvements ---------- */
+@media (max-width: 767px) {
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 1px;
+    }
+}
+
+/* ---------- Focus Ring for Accessibility ---------- */
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
 }
 
 /* =========================================== */

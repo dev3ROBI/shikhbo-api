@@ -9,28 +9,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = sanitize($_POST['name']);
             $parentId = $_POST['parent_id'] ? intval($_POST['parent_id']) : null;
             $type = sanitize($_POST['category_type'] ?? 'academic');
-            $icon = sanitize($_POST['icon'] ?? '');
+            $icon = $_POST['icon'] ?? '';
+            if (empty($icon) && !empty($_POST['icon_custom'])) $icon = sanitize($_POST['icon_custom']);
+            else $icon = sanitize($icon);
             $desc = sanitize($_POST['description'] ?? '');
-            $level = $parentId ? ($mysqli->query("SELECT level FROM exam_categories WHERE id=$parentId")->fetch_assoc()['level'] + 1) : 1;
+            $level = 1;
+            if ($parentId) { $r = $mysqli->query("SELECT level FROM exam_categories WHERE id=$parentId"); $p = $r ? $r->fetch_assoc() : null; if ($p) $level = $p['level'] + 1; }
             $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $name)) . '-' . substr(uniqid(), -4);
             $stmt = $mysqli->prepare("INSERT INTO exam_categories (name,slug,parent_id,level,category_type,icon,description) VALUES (?,?,?,?,?,?,?)");
-            $stmt->bind_param('ssiisss', $name, $slug, $parentId, $level, $type, $icon, $desc);
+            $stmt->bind_param('sssssss', $name, $slug, $parentId, $level, $type, $icon, $desc);
             $stmt->execute() ? $success = "Category added successfully." : $error = $stmt->error; $stmt->close();
         } elseif ($action === 'edit_category') {
             $catId=intval($_POST['category_id']); $name=sanitize($_POST['name']);
             $parentId=$_POST['parent_id'] ? intval($_POST['parent_id']) : null;
             $type=sanitize($_POST['category_type']??'academic'); $active=intval($_POST['is_active']??1);
-            $icon=sanitize($_POST['icon']??''); $desc=sanitize($_POST['description']??'');
-            $level=$parentId ? ($mysqli->query("SELECT level FROM exam_categories WHERE id=$parentId")->fetch_assoc()['level']+1):1;
+            $icon = $_POST['icon'] ?? '';
+            if (empty($icon) && !empty($_POST['icon_custom'])) $icon = sanitize($_POST['icon_custom']);
+            else $icon = sanitize($icon);
+            $desc=sanitize($_POST['description']??'');
+            $level=1;
+            if ($parentId) { $r = $mysqli->query("SELECT level FROM exam_categories WHERE id=$parentId"); $p = $r ? $r->fetch_assoc() : null; if ($p) $level = $p['level'] + 1; }
             $stmt=$mysqli->prepare("UPDATE exam_categories SET name=?,parent_id=?,level=?,category_type=?,is_active=?,icon=?,description=? WHERE id=?");
-            $stmt->bind_param('siisissi', $name, $parentId, $level, $type, $active, $icon, $desc, $catId);
+            $stmt->bind_param('sssssssi', $name, $parentId, $level, $type, $active, $icon, $desc, $catId);
             $stmt->execute() ? $success="Category updated successfully." : $error=$stmt->error; $stmt->close();
         } elseif ($action === 'delete_category') {
             $catId=intval($_POST['category_id']);
-            $parent=$mysqli->query("SELECT parent_id FROM exam_categories WHERE id=$catId")->fetch_assoc();
-            $np=$parent['parent_id']??null;
-            if($np) $mysqli->query("UPDATE exam_categories SET parent_id=$np WHERE parent_id=$catId");
-            else $mysqli->query("UPDATE exam_categories SET parent_id=NULL WHERE parent_id=$catId");
+            $r=$mysqli->query("SELECT parent_id FROM exam_categories WHERE id=$catId");
+            $parent=$r?$r->fetch_assoc():null;
+            $np=$parent?($parent['parent_id']??null):null;
+            if ($np) { $s=$mysqli->prepare("UPDATE exam_categories SET parent_id=? WHERE parent_id=?"); $s->bind_param('ii',$np,$catId); $s->execute(); $s->close(); }
+            else { $s=$mysqli->prepare("UPDATE exam_categories SET parent_id=NULL WHERE parent_id=?"); $s->bind_param('i',$catId); $s->execute(); $s->close(); }
             $stmt=$mysqli->prepare("DELETE FROM exam_categories WHERE id=?"); $stmt->bind_param('i',$catId);
             $stmt->execute() ? $success="Category deleted successfully." : $error=$stmt->error; $stmt->close();
         }
@@ -108,7 +116,7 @@ function renderRows($tree,$level=0){
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto table-wrapper">
             <table class="w-full">
                 <thead class="table-header">
                     <tr>
@@ -231,8 +239,9 @@ function editCategory(cat) {
     document.getElementById('catActive').value = cat.is_active;
     document.getElementById('catActiveGroup').style.display = 'block';
     if (cat.icon) {
-        document.querySelectorAll('.icon-radio').forEach(r => { r.checked = r.value === cat.icon; });
-        document.getElementById('catIconCustom').value = '';
+        let matched = false;
+        document.querySelectorAll('.icon-radio').forEach(r => { if (r.value === cat.icon) { r.checked = true; matched = true; } });
+        document.getElementById('catIconCustom').value = matched ? '' : cat.icon;
     } else {
         document.querySelectorAll('.icon-radio').forEach(r => r.checked = false);
         document.getElementById('catIconCustom').value = '';

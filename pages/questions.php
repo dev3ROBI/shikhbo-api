@@ -53,7 +53,24 @@ $allCats = $mysqli->query("SELECT ec.*, COUNT(e.id) as exam_count FROM exam_cate
 $catsById = [];
 while ($c = $allCats->fetch_assoc()) { $catsById[$c['id']] = $c; }
 
-function buildCatTree($cats, $parentId = null) {
+function buildCategoryPathsFlat($cats) {
+    $paths = []; $cache = [];
+    $getPath = function($id) use ($cats, &$cache, &$getPath) {
+        if (isset($cache[$id])) return $cache[$id];
+        if (!isset($cats[$id])) return '';
+        $p = $cats[$id]['parent_id'];
+        $n = $cats[$id]['name'];
+        $cache[$id] = ($p && isset($cats[$p])) ? $getPath($p) . ' → ' . $n : $n;
+        return $cache[$id];
+    };
+    foreach ($cats as $id => $c) $paths[$id] = $getPath($id);
+    return $paths;
+}
+$catPaths = buildCategoryPathsFlat($catsById);
+
+$exams = $mysqli->query("SELECT e.id, e.title, e.category_id FROM exams e ORDER BY e.category_id, e.title");
+
+function buildCatTree($cats, $p = null) { $t = []; foreach ($cats as $id => $c) { if ($c['parent_id'] == $p) { $c['children'] = buildCatTree($cats, $id); $t[] = $c; } } return $t; }
     $tree = [];
     foreach ($cats as $id => $cat) {
         if ($cat['parent_id'] == $parentId) {
@@ -149,8 +166,12 @@ $selectedExamTitle = $examFilter ? $mysqli->query("SELECT title FROM exams WHERE
                         <input type="hidden" name="page" value="questions">
                         <select name="exam_id" onchange="this.form.submit()" class="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg">
                             <option value="">All Exams</option>
-                            <?php foreach ($exams as $ex): ?>
-                            <option value="<?php echo $ex['id']; ?>" <?php echo $examFilter==$ex['id']?'selected':''; ?>><?php echo sanitizeOutput($ex['title']); ?></option>
+                            <?php $lastCatId = null; foreach ($exams as $ex):
+                                $catLabel = isset($catPaths[$ex['category_id']]) ? $catPaths[$ex['category_id']] : '';
+                                if ($ex['category_id'] != $lastCatId && $catLabel): $lastCatId = $ex['category_id']; ?>
+                                <option disabled style="font-weight:600;color:#6366f1;font-size:11px;">━━ <?php echo sanitizeOutput($catLabel); ?></option>
+                            <?php endif; ?>
+                            <option value="<?php echo $ex['id']; ?>" <?php echo $examFilter==$ex['id']?'selected':''; ?>>&nbsp;&nbsp;<?php echo sanitizeOutput($ex['title']); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </form>
@@ -251,8 +272,12 @@ $selectedExamTitle = $examFilter ? $mysqli->query("SELECT title FROM exams WHERE
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Exam</label>
                         <select name="exam_id" id="qExam" required class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                             <option value="">Select exam</option>
-                            <?php foreach ($exams as $ex): ?>
-                            <option value="<?php echo $ex['id']; ?>"><?php echo sanitizeOutput($ex['title']); ?></option>
+                            <?php $exams->data_seek(0); $lastCatId = null; foreach ($exams as $ex):
+                                $catLabel = isset($catPaths[$ex['category_id']]) ? $catPaths[$ex['category_id']] : '';
+                                if ($ex['category_id'] != $lastCatId && $catLabel): $lastCatId = $ex['category_id']; ?>
+                                <option disabled style="font-weight:600;color:#6366f1;font-size:11px;">━━ <?php echo sanitizeOutput($catLabel); ?></option>
+                            <?php endif; ?>
+                            <option value="<?php echo $ex['id']; ?>">&nbsp;&nbsp;<?php echo sanitizeOutput($ex['title']); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

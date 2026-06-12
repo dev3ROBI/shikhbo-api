@@ -123,7 +123,7 @@ $stmt->close();
 
     <!-- Students Table -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto table-wrapper">
             <table class="w-full">
                 <thead class="table-header">
                     <tr>
