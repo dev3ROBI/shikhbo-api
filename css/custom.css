@@ -43,7 +43,14 @@ body {
 .sidebar {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform;
-    overflow: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    overflow-y: auto;
+}
+.sidebar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
 }
 .sidebar > nav {
     scrollbar-width: none;
@@ -335,9 +342,11 @@ input[type="checkbox"] {
     flex-direction: column;
     border-radius: 16px;
     overflow: hidden;
+    background: #fff;
     box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 .dark .modal-content {
+    background: #1E293B;
     box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
@@ -619,10 +628,22 @@ input[type="checkbox"] {
     border-radius: 9999px;
     font-size: 12px;
     font-weight: 600;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 .badge:hover {
-    transform: scale(1.05);
+    opacity: 0.85;
+}
+.table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+.table-wrapper table {
+    min-width: 600px;
+}
+@media (max-width: 767px) {
+    .table-wrapper {
+        padding-bottom: 0;
+    }
 }
 
 /* ---------- Page Transitions ---------- */
