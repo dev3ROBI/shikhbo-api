@@ -269,9 +269,9 @@ if ($page && in_array($page, $adminPages)) {
 
 <div id="ticketModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeTicketModal()"></div>
-    <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
-        <div class="flex items-center justify-between mb-4"><h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">New Support Ticket</h3><button onclick="closeTicketModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"><i class="fa-solid fa-xmark text-xl"></i></button></div>
-        <form id="ticketForm" class="space-y-4" onsubmit="submitTicket(event)">
+    <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+        <div class="modal-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10"><h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">New Support Ticket</h3><button onclick="closeTicketModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button></div>
+        <form id="ticketForm" class="modal-body-scroll p-6 space-y-4" onsubmit="submitTicket(event)">
             <?php echo getCSRFTokenField(); ?>
             <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label><input type="text" id="ticketSubject" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary outline-none"></div>
             <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message</label><textarea id="ticketMessage" rows="3" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-shikhbo-primary outline-none"></textarea></div>

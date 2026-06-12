@@ -227,14 +227,14 @@ $catSelectHTML = getAllCategoryOptions($catsById, $categoryPaths);
 <div id="examModal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeExamModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl pointer-events-auto max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl pointer-events-auto">
+            <div class="modal-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100" id="examModalTitle">Create Exam</h3>
                 <button onclick="closeExamModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <form method="POST" id="examForm" class="p-6 space-y-4">
+            <form method="POST" id="examForm" class="modal-body-scroll p-6 space-y-4">
                 <?php echo getCSRFTokenField(); ?>
                 <input type="hidden" name="action" id="examAction" value="add_exam">
                 <input type="hidden" name="exam_id" id="examId">

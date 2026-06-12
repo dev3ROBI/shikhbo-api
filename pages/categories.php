@@ -50,6 +50,19 @@ $catsById=[]; while($c=$allCats->fetch_assoc()){$catsById[$c['id']]=$c;}
 function buildTree($cats,$p=null){$t=[];foreach($cats as $id=>$c){if($c['parent_id']==$p){$c['children']=buildTree($cats,$id);$t[]=$c;}}return $t;}
 $tree=buildTree($catsById);
 
+// Build breadcrumb paths for parent select
+function buildCatBreadcrumb($id, $cats, $depth = 0) {
+    if ($depth > 20 || !isset($cats[$id])) return '';
+    $p = $cats[$id]['parent_id'];
+    $n = $cats[$id]['name'];
+    return ($p && isset($cats[$p])) ? buildCatBreadcrumb($p, $cats, $depth + 1) . ' → ' . $n : $n;
+}
+$parentCatOptions = '';
+foreach ($catsById as $id => $c) {
+    $path = buildCatBreadcrumb($id, $catsById);
+    $parentCatOptions .= "<option value='{$id}'>" . sanitizeOutput($path) . "</option>";
+}
+
 $iconOptions = [
     ['value' => 'fa-graduation-cap', 'label' => 'Graduation (Academic)', 'icon' => 'graduation-cap'],
     ['value' => 'fa-briefcase', 'label' => 'Briefcase (Job)', 'icon' => 'briefcase'],
@@ -140,13 +153,13 @@ function renderRows($tree,$level=0){
     <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
         <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md pointer-events-auto">
-            <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+            <div class="modal-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100" id="catModalTitle">Add Category</h3>
                 <button onclick="closeModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <form method="POST" class="p-6 space-y-4" id="catForm">
+            <form method="POST" class="modal-body-scroll p-6 space-y-4" id="catForm">
                 <?php echo getCSRFTokenField();?>
                 <input type="hidden" name="action" id="catAction" value="add_category">
                 <input type="hidden" name="category_id" id="catId">
@@ -158,10 +171,7 @@ function renderRows($tree,$level=0){
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Parent</label>
                     <select name="parent_id" id="catParent" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                         <option value="">Root Category</option>
-                        <?php $parents=$mysqli->query("SELECT id,name,level FROM exam_categories ORDER BY level,id");
-                        while($p=$parents->fetch_assoc()):?>
-                        <option value="<?php echo $p['id'];?>"><?php echo str_repeat('— ',max(0,$p['level']-1)).sanitizeOutput($p['name']);?></option>
-                        <?php endwhile;?>
+                        <?php echo $parentCatOptions; ?>
                     </select>
                 </div>
                 <div>

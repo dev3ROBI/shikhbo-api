@@ -256,14 +256,14 @@ $selectedExamTitle = $examFilter ? $mysqli->query("SELECT title FROM exams WHERE
 <div id="questionModal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeQuestionModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl pointer-events-auto max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl pointer-events-auto">
+            <div class="modal-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100" id="qModalTitle">Add Question</h3>
                 <button onclick="closeQuestionModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <form method="POST" id="questionForm" class="p-6 space-y-4">
+            <form method="POST" id="questionForm" class="modal-body-scroll p-6 space-y-4">
                 <?php echo getCSRFTokenField(); ?>
                 <input type="hidden" name="action" id="qAction" value="add_question">
                 <input type="hidden" name="question_id" id="qId">

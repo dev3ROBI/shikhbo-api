@@ -43,11 +43,16 @@ body {
 .sidebar {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform;
+    overflow: hidden;
+}
+.sidebar > nav {
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
-.sidebar::-webkit-scrollbar {
+.sidebar > nav::-webkit-scrollbar {
     display: none;
+    width: 0;
+    height: 0;
 }
 .sidebar.open {
     transform: translateX(0);
@@ -128,18 +133,13 @@ html {
     background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
 }
 .table-row {
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease;
 }
 .table-row:hover {
     background-color: #F8FAFC;
-    transform: scale(1.005);
 }
 .dark .table-row:hover {
     background-color: #334155;
-}
-.overflow-x-auto {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
 }
 
 /* ---------- Navigation ---------- */
@@ -325,21 +325,17 @@ input[type="checkbox"] {
 }
 .modal-content {
     animation: modalIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    max-height: calc(100vh - 2rem);
+    max-height: 85vh;
     display: flex;
     flex-direction: column;
 }
-.modal-content > form,
-.modal-content > .modal-body {
+.modal-header {
+    flex-shrink: 0;
+}
+.modal-body-scroll {
     overflow-y: auto;
     flex: 1;
     min-height: 0;
-}
-@media (max-width: 639px) {
-    .modal-content {
-        max-height: calc(100vh - 1rem);
-        margin: 0.5rem;
-    }
 }
 @keyframes modalIn {
     from {
@@ -517,7 +513,8 @@ input[type="checkbox"] {
     }
     
     .modal-content {
-        margin: 16px;
+        margin: 0.5rem;
+        max-height: calc(100vh - 1rem);
     }
     
     .stat-card {
@@ -592,12 +589,19 @@ input[type="checkbox"] {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
-/* ---------- Select2-like Enhanced Selects ---------- */
+/* ---------- Enhanced Selects ---------- */
 select option {
     padding: 6px 10px;
 }
 select option:checked {
     font-weight: 600;
+}
+select optgroup,
+select option[disabled] {
+    font-weight: 600;
+    color: #6366f1;
+    font-size: 11px;
+    background: transparent;
 }
 
 /* ---------- Card Polish ---------- */

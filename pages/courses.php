@@ -62,8 +62,46 @@ $r = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_free=1"); if ($r
 $r = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_free=0"); if ($r) $paidCourses = $r->fetch_assoc()['c'];
 $r = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_featured=1"); if ($r) $featuredCount = $r->fetch_assoc()['c'];
 
-$allCoursesList = $mysqli->query("SELECT id, title FROM courses ORDER BY title");
+$allCoursesList = $mysqli->query("SELECT id, title, parent_course_id FROM courses ORDER BY title");
 if (!$allCoursesList) { $allCoursesList = []; }
+
+// Build category breadcrumb paths
+$allCatsData = $mysqli->query("SELECT id, name, parent_id FROM exam_categories ORDER BY parent_id, id");
+$catsById = [];
+if ($allCatsData) { while ($c = $allCatsData->fetch_assoc()) { $catsById[$c['id']] = $c; } }
+function buildCatPath($id, $cats, $depth = 0) {
+    if ($depth > 20 || !isset($cats[$id])) return '';
+    $p = $cats[$id]['parent_id'];
+    $n = $cats[$id]['name'];
+    return ($p && isset($cats[$p])) ? buildCatPath($p, $cats, $depth + 1) . ' → ' . $n : $n;
+}
+$catPathOptions = '';
+$lastLevel = 0;
+if ($allCatsData) {
+    $allCatsData->data_seek(0);
+    while ($c = $allCatsData->fetch_assoc()) {
+        $path = buildCatPath($c['id'], $catsById);
+        $catPathOptions .= "<option value='{$c['id']}'>" . sanitizeOutput($path) . "</option>";
+    }
+}
+
+// Build course breadcrumb paths for parent course select
+$allCoursesArr = [];
+if ($allCoursesList) {
+    $allCoursesList->data_seek(0);
+    while ($pc = $allCoursesList->fetch_assoc()) { $allCoursesArr[$pc['id']] = $pc; }
+}
+function buildCoursePath($id, $courses, $depth = 0) {
+    if ($depth > 20 || !isset($courses[$id])) return '';
+    $p = $courses[$id]['parent_course_id'];
+    $n = $courses[$id]['title'];
+    return ($p && isset($courses[$p])) ? buildCoursePath($p, $courses, $depth + 1) . ' → ' . $n : $n;
+}
+$coursePathOptions = '';
+foreach ($allCoursesArr as $id => $c) {
+    $path = buildCoursePath($id, $allCoursesArr);
+    $coursePathOptions .= "<option value='{$id}'>" . sanitizeOutput($path) . "</option>";
+}
 ?>
 
 <div class="page-content">
@@ -206,13 +244,13 @@ if (!$allCoursesList) { $allCoursesList = []; }
     <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
         <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl pointer-events-auto">
-            <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+            <div class="modal-header flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100" id="courseModalTitle">Add Course</h3>
                 <button onclick="closeModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <form method="POST" class="p-6 space-y-4" id="courseForm">
+            <form method="POST" class="modal-body-scroll p-6 space-y-4" id="courseForm">
                 <?php echo getCSRFTokenField();?>
                 <input type="hidden" name="action" id="courseAction" value="add_course">
                 <input type="hidden" name="course_id" id="courseId">
@@ -233,20 +271,14 @@ if (!$allCoursesList) { $allCoursesList = []; }
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Category</label>
                         <select name="category_id" id="courseCategory" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                             <option value="">No Category</option>
-                            <?php $cats = $mysqli->query("SELECT id,name,level FROM exam_categories ORDER BY level,id");
-                            while($cat = $cats->fetch_assoc()):?>
-                            <option value="<?php echo $cat['id'];?>"><?php echo str_repeat('— ',max(0,$cat['level']-1)).sanitizeOutput($cat['name']);?></option>
-                            <?php endwhile;?>
+                            <?php echo $catPathOptions; ?>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Parent Course</label>
                         <select name="parent_course_id" id="courseParent" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                             <option value="">None (Root Course)</option>
-                            <?php $allCoursesList->data_seek(0);
-                            while($pc = $allCoursesList->fetch_assoc()):?>
-                            <option value="<?php echo $pc['id'];?>"><?php echo sanitizeOutput($pc['title']);?></option>
-                            <?php endwhile;?>
+                            <?php echo $coursePathOptions; ?>
                         </select>
                     </div>
                     <div>
