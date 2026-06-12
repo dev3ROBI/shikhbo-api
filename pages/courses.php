@@ -1,0 +1,356 @@
+<?php
+$mysqli = getDBConnection();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) { $error = 'Security token validation failed.'; }
+    else {
+        $action = $_POST['action'] ?? '';
+        if ($action === 'add_category') {
+            $title = sanitize($_POST['title']);
+            $desc = sanitize($_POST['description'] ?? '');
+            $shortDesc = sanitize($_POST['short_description'] ?? '');
+            $categoryId = $_POST['category_id'] ? intval($_POST['category_id']) : null;
+            $parentCourseId = $_POST['parent_course_id'] ? intval($_POST['parent_course_id']) : null;
+            $courseType = sanitize($_POST['course_type'] ?? 'skill');
+            $difficulty = sanitize($_POST['difficulty'] ?? 'beginner');
+            $price = floatval($_POST['price'] ?? 0);
+            $isFree = intval($_POST['is_free'] ?? 1);
+            $coverImage = sanitize($_POST['cover_image'] ?? '');
+            $durationHours = intval($_POST['duration_hours'] ?? 0);
+            $isActive = intval($_POST['is_active'] ?? 1);
+            $isFeatured = intval($_POST['is_featured'] ?? 0);
+            $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $title)) . '-' . substr(uniqid(), -6);
+            $stmt = $mysqli->prepare("INSERT INTO courses (title,slug,short_description,description,cover_image,price,is_free,category_id,parent_course_id,course_type,difficulty,duration_hours,is_active,is_featured) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->bind_param('sssssdiiissiii', $title, $slug, $shortDesc, $desc, $coverImage, $price, $isFree, $categoryId, $parentCourseId, $courseType, $difficulty, $durationHours, $isActive, $isFeatured);
+            $stmt->execute() ? $success = "Course added successfully." : $error = $stmt->error; $stmt->close();
+        } elseif ($action === 'edit_category') {
+            $courseId = intval($_POST['course_id']);
+            $title = sanitize($_POST['title']);
+            $desc = sanitize($_POST['description'] ?? '');
+            $shortDesc = sanitize($_POST['short_description'] ?? '');
+            $categoryId = $_POST['category_id'] ? intval($_POST['category_id']) : null;
+            $parentCourseId = $_POST['parent_course_id'] ? intval($_POST['parent_course_id']) : null;
+            $courseType = sanitize($_POST['course_type'] ?? 'skill');
+            $difficulty = sanitize($_POST['difficulty'] ?? 'beginner');
+            $price = floatval($_POST['price'] ?? 0);
+            $isFree = intval($_POST['is_free'] ?? 1);
+            $coverImage = sanitize($_POST['cover_image'] ?? '');
+            $durationHours = intval($_POST['duration_hours'] ?? 0);
+            $isActive = intval($_POST['is_active'] ?? 1);
+            $isFeatured = intval($_POST['is_featured'] ?? 0);
+            $stmt = $mysqli->prepare("UPDATE courses SET title=?,short_description=?,description=?,cover_image=?,price=?,is_free=?,category_id=?,parent_course_id=?,course_type=?,difficulty=?,duration_hours=?,is_active=?,is_featured=? WHERE id=?");
+            $stmt->bind_param('ssssdiiissiiii', $title, $shortDesc, $desc, $coverImage, $price, $isFree, $categoryId, $parentCourseId, $courseType, $difficulty, $durationHours, $isActive, $isFeatured, $courseId);
+            $stmt->execute() ? $success = "Course updated successfully." : $error = $stmt->error; $stmt->close();
+        } elseif ($action === 'delete_category') {
+            $courseId = intval($_POST['course_id']);
+            $parent = $mysqli->query("SELECT parent_course_id FROM courses WHERE id=$courseId")->fetch_assoc();
+            $np = $parent['parent_course_id'] ?? null;
+            if ($np) $mysqli->query("UPDATE courses SET parent_course_id=$np WHERE parent_course_id=$courseId");
+            else $mysqli->query("UPDATE courses SET parent_course_id=NULL WHERE parent_course_id=$courseId");
+            $stmt = $mysqli->prepare("DELETE FROM courses WHERE id=?"); $stmt->bind_param('i', $courseId);
+            $stmt->execute() ? $success = "Course deleted successfully." : $error = $stmt->error; $stmt->close();
+        }
+    }
+}
+
+$courses = $mysqli->query("SELECT c.*, ec.name AS category_name FROM courses c LEFT JOIN exam_categories ec ON c.category_id = ec.id ORDER BY c.id DESC");
+
+$totalCourses = $mysqli->query("SELECT COUNT(*) AS c FROM courses")->fetch_assoc()['c'];
+$freeCourses = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_free=1")->fetch_assoc()['c'];
+$paidCourses = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_free=0")->fetch_assoc()['c'];
+$featuredCount = $mysqli->query("SELECT COUNT(*) AS c FROM courses WHERE is_featured=1")->fetch_assoc()['c'];
+
+$allCoursesList = $mysqli->query("SELECT id, title FROM courses ORDER BY title");
+?>
+
+<div class="page-content">
+    <?php if(isset($error)):?>
+    <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3 alert-auto-dismiss">
+        <i class="fa-solid fa-circle-exclamation text-red-500"></i><span class="text-red-700 dark:text-red-300"><?php echo sanitizeOutput($error);?></span>
+    </div>
+    <?php endif;?>
+    <?php if(isset($success)):?>
+    <div class="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3 alert-auto-dismiss">
+        <i class="fa-solid fa-circle-check text-green-500"></i><span class="text-green-700 dark:text-green-300"><?php echo sanitizeOutput($success);?></span>
+    </div>
+    <?php endif;?>
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Courses</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1"><?php echo $totalCourses;?> courses</p>
+        </div>
+        <button onclick="openAddModal()" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30">
+            <i class="fa-solid fa-plus"></i>Add Course
+        </button>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <i class="fa-solid fa-book text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-gray-100"><?php echo $totalCourses;?></p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <i class="fa-solid fa-circle-check text-green-600 dark:text-green-400"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-gray-100"><?php echo $freeCourses;?></p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Free</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <i class="fa-solid fa-coins text-amber-600 dark:text-amber-400"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-gray-100"><?php echo $paidCourses;?></p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Paid</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <i class="fa-solid fa-star text-purple-600 dark:text-purple-400"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-gray-100"><?php echo $featuredCount;?></p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Featured</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="table-header">
+                    <tr>
+                        <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cover</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Title</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Category</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Price</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Difficulty</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Status</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Featured</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 dark:divide-gray-700">
+                    <?php while($c = $courses->fetch_assoc()):
+                        $diffColors = ['beginner'=>'green','intermediate'=>'amber','advanced'=>'red'];
+                        $diffColor = $diffColors[$c['difficulty']]??'gray';
+                    ?>
+                    <tr class="table-row">
+                        <td class="px-4 py-3.5">
+                            <?php if($c['cover_image']):?>
+                            <img src="<?php echo sanitizeOutput($c['cover_image']);?>" alt="" class="h-10 w-10 object-cover rounded">
+                            <?php else:?>
+                            <div class="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                <i class="fa-solid fa-image text-gray-400 dark:text-gray-500"></i>
+                            </div>
+                            <?php endif;?>
+                        </td>
+                        <td class="px-4 py-3.5">
+                            <span class="font-medium text-gray-800 dark:text-gray-100"><?php echo sanitizeOutput($c['title']);?></span>
+                        </td>
+                        <td class="px-4 py-3.5 hide-mobile">
+                            <span class="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"><?php echo sanitizeOutput($c['category_name'] ?? 'Uncategorized');?></span>
+                        </td>
+                        <td class="px-4 py-3.5 hide-mobile">
+                            <?php if($c['is_free']):?>
+                            <span class="badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Free</span>
+                            <?php else:?>
+                            <span class="font-medium text-gray-800 dark:text-gray-100">৳<?php echo number_format($c['price'],2);?></span>
+                            <?php endif;?>
+                        </td>
+                        <td class="px-4 py-3.5 hide-mobile">
+                            <span class="badge bg-<?php echo $diffColor;?>-100 text-<?php echo $diffColor;?>-700 dark:bg-<?php echo $diffColor;?>-900/30 dark:text-<?php echo $diffColor;?>-400"><?php echo ucfirst($c['difficulty']);?></span>
+                        </td>
+                        <td class="px-4 py-3.5 hide-mobile">
+                            <?php echo $c['is_active'] ? "<span class='badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'><i class='fa-solid fa-check mr-1'></i>Active</span>" : "<span class='badge bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'><i class='fa-solid fa-xmark mr-1'></i>Inactive</span>";?>
+                        </td>
+                        <td class="px-4 py-3.5 hide-mobile">
+                            <?php echo $c['is_featured'] ? "<span class='badge bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'><i class='fa-solid fa-star mr-1'></i>Featured</span>" : "<span class='badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'>No</span>";?>
+                        </td>
+                        <td class="px-4 py-3.5">
+                            <div class="flex items-center gap-1">
+                                <button onclick='editCourse(<?php echo htmlspecialchars(json_encode($c),ENT_QUOTES,'UTF-8');?>)' class='p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors' title='Edit'><i class='fa-solid fa-pen-to-square'></i></button>
+                                <button onclick='deleteCourse(<?php echo $c['id'];?>)' class='p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors' title='Delete'><i class='fa-solid fa-trash'></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endwhile;?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="courseModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl pointer-events-auto">
+            <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100" id="courseModalTitle">Add Course</h3>
+                <button onclick="closeModal()" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form method="POST" class="p-6 space-y-4" id="courseForm">
+                <?php echo getCSRFTokenField();?>
+                <input type="hidden" name="action" id="courseAction" value="add_category">
+                <input type="hidden" name="course_id" id="courseId">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Title</label>
+                        <input type="text" name="title" id="courseTitle" required class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+                        <textarea name="description" id="courseDesc" rows="3" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Short Description</label>
+                        <input type="text" name="short_description" id="courseShortDesc" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Category</label>
+                        <select name="category_id" id="courseCategory" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="">No Category</option>
+                            <?php $cats = $mysqli->query("SELECT id,name,level FROM exam_categories ORDER BY level,id");
+                            while($cat = $cats->fetch_assoc()):?>
+                            <option value="<?php echo $cat['id'];?>"><?php echo str_repeat('— ',max(0,$cat['level']-1)).sanitizeOutput($cat['name']);?></option>
+                            <?php endwhile;?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Parent Course</label>
+                        <select name="parent_course_id" id="courseParent" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="">None (Root Course)</option>
+                            <?php $allCoursesList->data_seek(0);
+                            while($pc = $allCoursesList->fetch_assoc()):?>
+                            <option value="<?php echo $pc['id'];?>"><?php echo sanitizeOutput($pc['title']);?></option>
+                            <?php endwhile;?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Course Type</label>
+                        <select name="course_type" id="courseType" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="academic">Academic</option>
+                            <option value="skill">Skill</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Difficulty</label>
+                        <select name="difficulty" id="courseDifficulty" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Price</label>
+                        <input type="number" name="price" id="coursePrice" step="0.01" min="0" value="0" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Is Free</label>
+                        <select name="is_free" id="courseIsFree" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Cover Image URL</label>
+                        <input type="text" name="cover_image" id="courseCoverImage" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced" placeholder="https://...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Duration (Hours)</label>
+                        <input type="number" name="duration_hours" id="courseDurationHours" min="0" value="0" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Is Active</label>
+                        <select name="is_active" id="courseIsActive" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Is Featured</label>
+                        <select name="is_featured" id="courseIsFeatured" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<form id="deleteCourseForm" method="POST" class="hidden"><?php echo getCSRFTokenField();?><input type="hidden" name="action" value="delete_category"><input type="hidden" name="course_id" id="deleteCourseId"></form>
+
+<script>
+function openAddModal() {
+    document.getElementById('courseModalTitle').textContent = 'Add Course';
+    document.getElementById('courseAction').value = 'add_category';
+    document.getElementById('courseId').value = '';
+    document.getElementById('courseTitle').value = '';
+    document.getElementById('courseDesc').value = '';
+    document.getElementById('courseShortDesc').value = '';
+    document.getElementById('courseCategory').value = '';
+    document.getElementById('courseParent').value = '';
+    document.getElementById('courseType').value = 'skill';
+    document.getElementById('courseDifficulty').value = 'beginner';
+    document.getElementById('coursePrice').value = '0';
+    document.getElementById('courseIsFree').value = '1';
+    document.getElementById('courseCoverImage').value = '';
+    document.getElementById('courseDurationHours').value = '0';
+    document.getElementById('courseIsActive').value = '1';
+    document.getElementById('courseIsFeatured').value = '0';
+    document.getElementById('courseModal').classList.remove('hidden');
+}
+function editCourse(course) {
+    document.getElementById('courseModalTitle').textContent = 'Edit Course';
+    document.getElementById('courseAction').value = 'edit_category';
+    document.getElementById('courseId').value = course.id;
+    document.getElementById('courseTitle').value = course.title;
+    document.getElementById('courseDesc').value = course.description || '';
+    document.getElementById('courseShortDesc').value = course.short_description || '';
+    document.getElementById('courseCategory').value = course.category_id || '';
+    document.getElementById('courseParent').value = course.parent_course_id || '';
+    document.getElementById('courseType').value = course.course_type;
+    document.getElementById('courseDifficulty').value = course.difficulty;
+    document.getElementById('coursePrice').value = course.price;
+    document.getElementById('courseIsFree').value = course.is_free;
+    document.getElementById('courseCoverImage').value = course.cover_image || '';
+    document.getElementById('courseDurationHours').value = course.duration_hours;
+    document.getElementById('courseIsActive').value = course.is_active;
+    document.getElementById('courseIsFeatured').value = course.is_featured;
+    document.getElementById('courseModal').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('courseModal').classList.add('hidden'); }
+function deleteCourse(id) {
+    confirmAction('Delete this course? Children will be re-assigned to the parent course.', () => {
+        document.getElementById('deleteCourseId').value = id;
+        document.getElementById('deleteCourseForm').submit();
+    });
+}
+</script>
