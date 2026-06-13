@@ -102,10 +102,23 @@ try {
     }
     $xpStmt->close();
 
-    // Get last 7 days of check-ins for weekly view
+    // Get last check-in date
+    $lastCheckinDate = null;
+    $lastStmt = $conn->prepare("SELECT checkin_date FROM daily_checkins WHERE user_id = ? ORDER BY checkin_date DESC LIMIT 1");
+    $lastStmt->bind_param("i", $uid);
+    $lastStmt->execute();
+    $lastResult = $lastStmt->get_result();
+    if ($lastResult->num_rows > 0) {
+        $lastCheckinDate = $lastResult->fetch_assoc()['checkin_date'];
+    }
+    $lastStmt->close();
+
+    // Get current week (Mon-Sun) check-ins for weekly circles view
     $weekCheckins = [];
-    $weekStmt = $conn->prepare("SELECT checkin_date, xp_earned FROM daily_checkins WHERE user_id = ? AND checkin_date >= DATE_SUB(?, INTERVAL 7 DAY) ORDER BY checkin_date ASC");
-    $weekStmt->bind_param("is", $uid, $serverDate);
+    $weekStart = date('Y-m-d', strtotime('monday this week'));
+    $weekEnd = date('Y-m-d', strtotime('sunday this week'));
+    $weekStmt = $conn->prepare("SELECT checkin_date FROM daily_checkins WHERE user_id = ? AND checkin_date >= ? AND checkin_date <= ? ORDER BY checkin_date ASC");
+    $weekStmt->bind_param("iss", $uid, $weekStart, $weekEnd);
     $weekStmt->execute();
     $weekResult = $weekStmt->get_result();
     while ($row = $weekResult->fetch_assoc()) {
@@ -131,6 +144,7 @@ try {
             'checked_in_today' => $checkedInToday,
             'total_checkins' => $totalCheckins,
             'total_xp' => $totalXp,
+            'last_checkin_date' => $lastCheckinDate,
             'week_checkins' => $weekCheckins
         ],
         'access' => 'unlimited'
