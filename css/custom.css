@@ -327,96 +327,89 @@ input[type="checkbox"] {
 
 /* ---------- Modal Redesign ---------- */
 .modal-backdrop {
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0.6) !important;
+    transition: opacity 0.3s ease;
 }
 .dark .modal-backdrop {
-    background: rgba(0, 0, 0, 0.6) !important;
+    background: rgba(0, 0, 0, 0.8) !important;
 }
 
 .modal-content {
-    animation: modalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    height: 520px;
+    animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-height: calc(100vh - 60px);
+    height: auto;
     display: flex;
     flex-direction: column;
-    border-radius: 16px;
+    border-radius: 24px;
     overflow: hidden;
     background: #fff;
-    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    border: none;
+    margin: 20px;
 }
 .dark .modal-content {
     background: #1E293B;
-    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
-@media (max-height: 640px) {
+@media (max-width: 640px) {
     .modal-content {
-        height: 85vh;
+        margin: 10px;
+        max-height: calc(100vh - 20px);
+        border-radius: 20px;
     }
 }
 
 .modal-header {
     flex-shrink: 0;
-    background: linear-gradient(135deg, #4F46E5 0%, #6366F1 50%, #818CF8 100%);
-    border-bottom: none;
+    background: #fff;
+    border-bottom: 1px solid #F1F5F9;
     padding: 20px 24px;
     position: relative;
-    overflow: hidden;
-    min-height: 64px;
+    z-index: 20;
 }
-.modal-header::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(circle at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.05) 0%, transparent 40%);
-    pointer-events: none;
+.dark .modal-header {
+    background: #1E293B;
+    border-bottom-color: #334155;
 }
-.modal-header::after {
-    content: '';
-    position: absolute;
-    top: -60%;
-    right: -10%;
-    width: 250px;
-    height: 250px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%);
-    pointer-events: none;
-}
+
 .modal-header h3 {
-    color: #fff;
-    font-size: 16px;
+    color: #0F172A;
+    font-size: 18px;
     font-weight: 700;
-    letter-spacing: -0.01em;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.12);
-    position: relative;
-    z-index: 1;
+    letter-spacing: -0.02em;
 }
+.dark .modal-header h3 {
+    color: #F8FAFC;
+}
+
 .modal-header button {
-    color: rgba(255, 255, 255, 0.7) !important;
-    background: rgba(255, 255, 255, 0.12) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 10px;
+    color: #64748B !important;
+    background: #F1F5F9 !important;
+    border: none !important;
+    border-radius: 12px;
     width: 36px;
     height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    position: relative;
-    z-index: 1;
     cursor: pointer;
 }
 .modal-header button:hover {
-    color: #fff !important;
-    background: rgba(255, 255, 255, 0.2) !important;
+    color: #0F172A !important;
+    background: #E2E8F0 !important;
     transform: rotate(90deg);
-    border-color: rgba(255, 255, 255, 0.2) !important;
 }
-.dark .modal-header {
-    background: linear-gradient(135deg, #312E81 0%, #4338CA 50%, #4F46E5 100%);
+.dark .modal-header button {
+    color: #94A3B8 !important;
+    background: #334155 !important;
+}
+.dark .modal-header button:hover {
+    color: #F8FAFC !important;
+    background: #475569 !important;
 }
 
 .modal-body-scroll {
@@ -426,92 +419,98 @@ input[type="checkbox"] {
     min-height: 0;
     padding: 24px;
     background: #fff;
+    scrollbar-gutter: stable;
 }
 .dark .modal-body-scroll {
     background: #1E293B;
 }
+
+/* Custom Scrollbar for Modal Body */
 .modal-body-scroll::-webkit-scrollbar {
-    width: 4px;
+    width: 5px;
 }
 .modal-body-scroll::-webkit-scrollbar-track {
     background: transparent;
 }
 .modal-body-scroll::-webkit-scrollbar-thumb {
-    background: #CBD5E1;
-    border-radius: 4px;
+    background: #E2E8F0;
+    border-radius: 10px;
 }
 .dark .modal-body-scroll::-webkit-scrollbar-thumb {
-    background: #475569;
+    background: #334155;
 }
 
-/* Footer buttons inside modal-body-scroll */
 .modal-actions {
     position: sticky;
-    bottom: -24px;
-    background: inherit;
-    padding: 16px 0 0;
-    margin-top: 16px;
+    bottom: -24px; /* Offset for body padding */
+    left: -24px;
+    right: -24px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 16px 24px;
+    margin-top: 24px;
+    margin-bottom: -24px;
+    margin-left: -24px;
+    margin-right: -24px;
     border-top: 1px solid #F1F5F9;
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 12px;
+    z-index: 10;
 }
 .dark .modal-actions {
+    background: rgba(30, 41, 59, 0.9);
     border-top-color: #334155;
 }
+
 .modal-actions .btn-cancel {
     padding: 10px 20px;
     border: 1px solid #E2E8F0;
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     color: #64748B;
     background: #fff;
     transition: all 0.2s ease;
-    cursor: pointer;
 }
 .modal-actions .btn-cancel:hover {
     background: #F8FAFC;
     border-color: #CBD5E1;
-    color: #475569;
+    color: #334155;
 }
 .dark .modal-actions .btn-cancel {
-    background: transparent;
-    border-color: #475569;
+    background: #1E293B;
+    border-color: #334155;
     color: #94A3B8;
 }
 .dark .modal-actions .btn-cancel:hover {
-    background: #1E293B;
-    border-color: #64748B;
-    color: #E2E8F0;
+    background: #334155;
+    border-color: #475569;
+    color: #F8FAFC;
 }
+
 .modal-actions .btn-save {
     padding: 10px 24px;
-    background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+    background: #4F46E5;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 14px;
     font-weight: 600;
     color: #fff;
     transition: all 0.2s ease;
-    cursor: pointer;
-    box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.35);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 .modal-actions .btn-save:hover {
+    background: #4338CA;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px -2px rgba(79, 70, 229, 0.45);
-}
-.modal-actions .btn-save:active {
-    transform: translateY(0);
-}
-.dark .modal-actions .btn-save {
-    box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.25);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
 }
 
 @keyframes modalIn {
     from {
         opacity: 0;
-        transform: scale(0.92) translateY(20px);
+        transform: scale(0.95) translateY(10px);
     }
     to {
         opacity: 1;

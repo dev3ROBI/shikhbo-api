@@ -101,7 +101,6 @@ function renderCategoryTreeForFilter($tree, $selectedExamId, $level = 0) {
     return $html;
 }
 
-$exams = $mysqli->query("SELECT id, title FROM exams ORDER BY title");
 $selectedExamTitle = $examFilter ? $mysqli->query("SELECT title FROM exams WHERE id=$examFilter")->fetch_assoc()['title'] : '';
 ?>
 
