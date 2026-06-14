@@ -58,7 +58,7 @@ $examStmt = $conn->prepare("
            (SELECT COUNT(*) FROM questions q WHERE q.exam_id = e.id) AS question_count
     FROM exams e
     WHERE e.course_id = ? AND e.status = 'active'
-    ORDER BY e.sort_order, e.title
+    ORDER BY e.id
 ");
 $examStmt->bind_param('i', $courseId);
 $examStmt->execute();

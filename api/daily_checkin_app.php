@@ -125,11 +125,18 @@ try {
     $insertStmt->bind_param("isii", $uid, $serverDate, $xpReward, $newStreak);
     
     if ($insertStmt->execute()) {
-        // Update streak in users table
-        $updateUserStmt = $conn->prepare("UPDATE users SET streak = ? WHERE id = ?");
-        $updateUserStmt->bind_param("ii", $newStreak, $uid);
+        // Update streak and total_xp in users table
+        $updateUserStmt = $conn->prepare("UPDATE users SET streak = ?, total_xp = total_xp + ? WHERE id = ?");
+        $updateUserStmt->bind_param("iii", $newStreak, $xpReward, $uid);
         $updateUserStmt->execute();
         $updateUserStmt->close();
+
+        // Get updated total_xp from users table
+        $xpResult = $conn->query("SELECT total_xp FROM users WHERE id = $uid");
+        $totalUserXp = 0;
+        if ($xpResult && $xpResult->num_rows > 0) {
+            $totalUserXp = (int)$xpResult->fetch_assoc()['total_xp'];
+        }
 
         echo json_encode([
             'status' => 'success',
@@ -138,6 +145,7 @@ try {
                 'checkin_date' => $serverDate,
                 'xp_earned' => $xpReward,
                 'streak' => $newStreak,
+                'total_xp' => $totalUserXp,
                 'already_checked' => false
             ]
         ], JSON_UNESCAPED_UNICODE);

@@ -69,7 +69,8 @@ $columns = [
     "profile_image VARCHAR(255) NULL",
     "last_login DATETIME NULL",
     "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
-    "role VARCHAR(32) DEFAULT NULL"
+    "role VARCHAR(32) DEFAULT NULL",
+    "total_xp INT DEFAULT 0"
 ];
 
 foreach ($columns as $col) {
@@ -78,6 +79,16 @@ foreach ($columns as $col) {
     if ($check->num_rows == 0) {
         $server->query("ALTER TABLE users ADD COLUMN $col");
     }
+}
+
+// Initialize total_xp from existing check-in XP for users who already have check-ins
+$initXp = $server->query("SELECT COUNT(*) as cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" . DB_NAME . "' AND TABLE_NAME = 'users' AND COLUMN_NAME = 'total_xp'");
+$xpColExists = false;
+if ($initXp && $initXp->num_rows > 0) {
+    $xpColExists = true;
+}
+if ($xpColExists) {
+    $server->query("UPDATE users u SET total_xp = (SELECT COALESCE(SUM(xp_earned), 0) FROM daily_checkins WHERE user_id = u.id) WHERE total_xp = 0 AND (SELECT COUNT(*) FROM daily_checkins WHERE user_id = u.id) > 0");
 }
 
 // =======================

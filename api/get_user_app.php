@@ -63,6 +63,7 @@ try {
     $user = $result->fetch_assoc();
     $stmt->close();
 
+    $totalXp = (int)($user['total_xp'] ?? 0);
     $memberSince = $user['member_since'];
     if (empty($memberSince) && !empty($user['created_at'])) {
         $memberSince = date('Y-m-d', strtotime($user['created_at']));
@@ -137,6 +138,7 @@ try {
             'language' => $user['language'] ?? 'en',
             'tagline' => $user['tagline'] ?? '',
             'streak' => (int)$user['streak'],
+            'total_xp' => $totalXp,
             'member_since' => $memberSince ?? date('Y-m-d'),
             'is_premium' => (bool)$user['is_premium']
         ],

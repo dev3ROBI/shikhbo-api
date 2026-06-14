@@ -47,13 +47,13 @@ if (!$course) {
 
 // Get exams with user's best result
 $sql = "SELECT e.id, e.title, e.duration_minutes, e.total_marks, e.passing_percentage,
-               e.is_free, e.sort_order,
+               e.is_free,
                (SELECT COUNT(*) FROM questions q WHERE q.exam_id = e.id) AS question_count,
                (SELECT MAX(er.percentage) FROM exam_results er WHERE er.exam_id = e.id AND er.user_id = ?) AS best_score,
                (SELECT COUNT(*) FROM exam_results er WHERE er.exam_id = e.id AND er.user_id = ?) AS attempt_count
         FROM exams e
         WHERE e.course_id = ? AND e.status = 'active'
-        ORDER BY e.sort_order, e.title";
+        ORDER BY e.id";
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('iii', $uid, $uid, $courseId);
