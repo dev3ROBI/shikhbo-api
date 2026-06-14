@@ -105,16 +105,16 @@ try {
         // Calculate difference in days using server dates
         $lastTimestamp = strtotime($lastDate);
         $todayTimestamp = strtotime($serverDate);
-        $diffDays = ($todayTimestamp - $lastTimestamp) / (60 * 60 * 24);
+        $diffDays = (int)(($todayTimestamp - $lastTimestamp) / (60 * 60 * 24));
 
         if ($diffDays == 1) {
             // Consecutive day - increase streak
             $newStreak = $lastStreak + 1;
-        } elseif ($diffDays == 0) {
-            // Same day - should not happen as we already checked
+        } elseif ($diffDays <= 0) {
+            // Same day or earlier - keep existing streak
             $newStreak = $lastStreak;
         } else {
-            // Gap in days - reset streak
+            // Gap in days (diffDays > 1) - reset streak
             $newStreak = 1;
         }
     }
