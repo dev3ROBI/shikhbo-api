@@ -47,12 +47,12 @@ if (!$course) {
     exit;
 }
 
-// Course has no category
 if (!$course['category_id']) {
     echo json_encode([
         'status' => 'success',
         'category' => null,
         'subcategories' => [],
+        'exams' => [],
         'access' => 'unlimited'
     ]);
     exit;
@@ -70,12 +70,55 @@ if (!$category) {
         'status' => 'success',
         'category' => null,
         'subcategories' => [],
+        'exams' => [],
         'access' => 'unlimited'
     ]);
     exit;
 }
 
-// Recursively get all child category IDs
+// Helper: get exams with user results for a set of category IDs
+function getExamsForCategoryIds($conn, $categoryIds, $uid) {
+    if (empty($categoryIds)) return [];
+    $ph = implode(',', array_fill(0, count($categoryIds), '?'));
+    $types = str_repeat('i', count($categoryIds));
+    $sql = "
+        SELECT e.id, e.title, e.duration_minutes, e.total_marks, e.passing_percentage,
+               e.is_free, e.status,
+               (SELECT COUNT(*) FROM questions q WHERE q.exam_id = e.id) AS question_count,
+               (SELECT MAX(er.percentage) FROM exam_results er WHERE er.exam_id = e.id AND er.user_id = ?) AS user_best_score,
+               (SELECT COUNT(*) FROM exam_results er WHERE er.exam_id = e.id AND er.user_id = ?) AS user_attempt_count,
+               (SELECT er.status FROM exam_results er WHERE er.exam_id = e.id AND er.user_id = ? ORDER BY er.id DESC LIMIT 1) AS user_last_status
+        FROM exams e
+        WHERE e.category_id IN ($ph) AND e.status = 'active'
+        ORDER BY e.created_at DESC
+    ";
+    $stmt = $conn->prepare($sql);
+    $allParams = array_merge([$uid, $uid, $uid], $categoryIds);
+    $allTypes = str_repeat('i', 3) . $types;
+    $stmt->bind_param($allTypes, ...$allParams);
+    $stmt->execute();
+    $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    $exams = [];
+    foreach ($rows as $row) {
+        $best = $row['user_best_score'] !== null ? round((float)$row['user_best_score'], 1) : null;
+        $exams[] = [
+            'id' => (int)$row['id'],
+            'title' => $row['title'],
+            'duration_minutes' => (int)$row['duration_minutes'],
+            'total_marks' => (int)$row['total_marks'],
+            'passing_percentage' => (int)$row['passing_percentage'],
+            'is_free' => (int)$row['is_free'],
+            'question_count' => (int)$row['question_count'],
+            'user_best_score' => $best,
+            'user_attempt_count' => (int)$row['user_attempt_count'],
+            'user_last_status' => $row['user_last_status']
+        ];
+    }
+    return $exams;
+}
+
+// Helper: recursively get all child category IDs
 function getAllChildIds($conn, $parentId) {
     $ids = [(int)$parentId];
     $stmt = $conn->prepare("SELECT id FROM exam_categories WHERE parent_id = ? AND is_active = 1");
@@ -106,63 +149,27 @@ $subcatStmt->close();
 // Get all category IDs in the tree
 $allCategoryIds = getAllChildIds($conn, $course['category_id']);
 
-// Build subcategories with exams
 $subcategories = [];
-foreach ($subcats as $sc) {
-    $scId = (int)$sc['id'];
-    
-    // Get child category IDs for this subcategory (including itself and its children)
-    $scChildIds = getAllChildIds($conn, $scId);
-    
-    $placeholders = implode(',', array_fill(0, count($scChildIds), '?'));
-    $types = str_repeat('i', count($scChildIds));
-    
-    // Get exams with question count and user's best result
-    $examSql = "
-        SELECT e.id, e.title, e.duration_minutes, e.total_marks, e.passing_percentage,
-               e.is_free, e.status,
-               (SELECT COUNT(*) FROM questions q WHERE q.exam_id = e.id) AS question_count,
-               (SELECT MAX(er.percentage) FROM exam_results er WHERE er.exam_id = e.id AND er.user_id = ?) AS user_best_score,
-               (SELECT COUNT(*) FROM exam_results er WHERE er.exam_id = e.id AND er.user_id = ?) AS user_attempt_count,
-               (SELECT er.status FROM exam_results er WHERE er.exam_id = e.id AND er.user_id = ? ORDER BY er.id DESC LIMIT 1) AS user_last_status
-        FROM exams e
-        WHERE e.category_id IN ($placeholders) AND e.status = 'active'
-        ORDER BY e.created_at DESC
-    ";
-    
-    $examStmt = $conn->prepare($examSql);
-    $allParams = array_merge([$uid, $uid, $uid], $scChildIds);
-    $allTypes = str_repeat('i', 3) . $types;
-    $examStmt->bind_param($allTypes, ...$allParams);
-    $examStmt->execute();
-    $examRows = $examStmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    $examStmt->close();
-    
-    $exams = [];
-    foreach ($examRows as $row) {
-        $best = $row['user_best_score'] !== null ? round((float)$row['user_best_score'], 1) : null;
-        $exams[] = [
-            'id' => (int)$row['id'],
-            'title' => $row['title'],
-            'duration_minutes' => (int)$row['duration_minutes'],
-            'total_marks' => (int)$row['total_marks'],
-            'passing_percentage' => (int)$row['passing_percentage'],
-            'is_free' => (int)$row['is_free'],
-            'question_count' => (int)$row['question_count'],
-            'user_best_score' => $best,
-            'user_attempt_count' => (int)$row['user_attempt_count'],
-            'user_last_status' => $row['user_last_status']
+$directExams = [];
+
+if (count($subcats) > 0) {
+    // Has subcategories: build subcategories with their own exams
+    foreach ($subcats as $sc) {
+        $scId = (int)$sc['id'];
+        $scChildIds = getAllChildIds($conn, $scId);
+        $exams = getExamsForCategoryIds($conn, $scChildIds, $uid);
+        $subcategories[] = [
+            'id' => $scId,
+            'name' => $sc['name'],
+            'slug' => $sc['slug'],
+            'icon' => $sc['icon'],
+            'exam_count' => (int)$sc['exam_count'],
+            'exams' => $exams
         ];
     }
-    
-    $subcategories[] = [
-        'id' => $scId,
-        'name' => $sc['name'],
-        'slug' => $sc['slug'],
-        'icon' => $sc['icon'],
-        'exam_count' => (int)$sc['exam_count'],
-        'exams' => $exams
-    ];
+} else {
+    // No subcategories: fetch exams directly under this category
+    $directExams = getExamsForCategoryIds($conn, [$course['category_id']], $uid);
 }
 
 // Get total exam count across all categories
@@ -185,5 +192,6 @@ echo json_encode([
         'total_exams' => $totalExams
     ],
     'subcategories' => $subcategories,
+    'exams' => $directExams,
     'access' => 'unlimited'
 ]);

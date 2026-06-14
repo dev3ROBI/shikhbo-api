@@ -37,11 +37,35 @@ if ($status !== 'all') {
     $types .= "s";
 }
 
+// Build category tree exam count map
+$catExamMap = [];
+$catResult = $conn->query("
+    SELECT ec.id, ec.parent_id,
+           (SELECT COUNT(*) FROM exams e WHERE e.category_id = ec.id AND e.status = 'active') AS direct_count
+    FROM exam_categories ec WHERE ec.is_active = 1
+");
+$catRows = [];
+while ($r = $catResult->fetch_assoc()) {
+    $r['direct_count'] = (int)$r['direct_count'];
+    $r['total_count'] = (int)$r['direct_count'];
+    $catRows[(int)$r['id']] = $r;
+}
+foreach ($catRows as $id => &$data) {
+    $pid = $data['parent_id'];
+    if ($pid && isset($catRows[$pid])) {
+        $catRows[$pid]['total_count'] += $data['direct_count'];
+    }
+}
+unset($data);
+foreach ($catRows as $id => $data) {
+    $catExamMap[$id] = $data['total_count'];
+}
+
 $sql = "SELECT e.id AS enrollment_id, e.enrolled_at, e.progress, e.status AS enrollment_status,
                c.id AS course_id, c.title, c.slug, c.short_description, c.cover_image,
-               c.price, c.is_free, c.difficulty, c.duration_hours, c.total_enrolled,
+               c.price, c.is_free, c.difficulty, c.duration_hours, c.total_enrolled, c.category_id,
                cat.name AS category_name,
-               (SELECT COUNT(*) FROM exams ex WHERE ex.course_id = c.id AND ex.status = 'active') AS exam_count
+               (SELECT COUNT(*) FROM exams ex WHERE ex.course_id = c.id AND ex.status = 'active') AS direct_exam_count
         FROM enrollments e
         JOIN courses c ON e.course_id = c.id
         LEFT JOIN exam_categories cat ON c.category_id = cat.id
@@ -55,6 +79,11 @@ $result = $stmt->get_result();
 
 $enrollments = [];
 while ($row = $result->fetch_assoc()) {
+    $catId = (int)$row['category_id'];
+    $catExamCount = $catExamMap[$catId] ?? 0;
+    $directCount = (int)$row['direct_exam_count'];
+    $examCount = $catExamCount > 0 ? $catExamCount : $directCount;
+
     $enrollments[] = [
         'enrollment_id' => (int)$row['enrollment_id'],
         'enrolled_at' => $row['enrolled_at'],
@@ -70,7 +99,7 @@ while ($row = $result->fetch_assoc()) {
             'is_free' => (int)$row['is_free'],
             'difficulty' => $row['difficulty'],
             'duration_hours' => (int)$row['duration_hours'],
-            'exam_count' => (int)$row['exam_count'],
+            'exam_count' => $examCount,
             'total_enrolled' => (int)$row['total_enrolled'],
             'category_name' => $row['category_name']
         ]

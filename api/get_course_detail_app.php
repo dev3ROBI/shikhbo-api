@@ -33,9 +33,33 @@ if ($courseId <= 0) {
     exit;
 }
 
+// Build category tree exam count map
+$catExamMap = [];
+$catResult = $conn->query("
+    SELECT ec.id, ec.parent_id,
+           (SELECT COUNT(*) FROM exams e WHERE e.category_id = ec.id AND e.status = 'active') AS direct_count
+    FROM exam_categories ec WHERE ec.is_active = 1
+");
+$catRows = [];
+while ($r = $catResult->fetch_assoc()) {
+    $r['direct_count'] = (int)$r['direct_count'];
+    $r['total_count'] = (int)$r['direct_count'];
+    $catRows[(int)$r['id']] = $r;
+}
+foreach ($catRows as $id => &$data) {
+    $pid = $data['parent_id'];
+    if ($pid && isset($catRows[$pid])) {
+        $catRows[$pid]['total_count'] += $data['direct_count'];
+    }
+}
+unset($data);
+foreach ($catRows as $id => $data) {
+    $catExamMap[$id] = $data['total_count'];
+}
+
 $stmt = $conn->prepare("
     SELECT c.*, cat.name AS category_name, cat.slug AS category_slug,
-           (SELECT COUNT(*) FROM exams e WHERE e.course_id = c.id AND e.status = 'active') AS exam_count,
+           (SELECT COUNT(*) FROM exams e WHERE e.course_id = c.id AND e.status = 'active') AS direct_exam_count,
            (SELECT COUNT(*) FROM enrollments e WHERE e.course_id = c.id AND e.status = 'active') AS enrolled_count
     FROM courses c
     LEFT JOIN exam_categories cat ON c.category_id = cat.id
@@ -51,6 +75,11 @@ if (!$course) {
     echo json_encode(['status' => 'error', 'message' => 'Course not found']);
     exit;
 }
+
+$catId = (int)$course['category_id'];
+$catExamCount = $catExamMap[$catId] ?? 0;
+$directCount = (int)$course['direct_exam_count'];
+$examCount = $catExamCount > 0 ? $catExamCount : $directCount;
 
 $examStmt = $conn->prepare("
     SELECT e.id, e.title, e.duration_minutes, e.total_marks, e.passing_percentage,
@@ -100,7 +129,7 @@ echo json_encode([
         'course_type' => $course['course_type'],
         'difficulty' => $course['difficulty'],
         'duration_hours' => (int)$course['duration_hours'],
-        'exam_count' => (int)$course['exam_count'],
+        'exam_count' => $examCount,
         'enrolled_count' => (int)$course['enrolled_count'],
         'is_featured' => (int)$course['is_featured'],
         'category_name' => $course['category_name'],
