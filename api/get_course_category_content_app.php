@@ -152,24 +152,22 @@ $allCategoryIds = getAllChildIds($conn, $course['category_id']);
 $subcategories = [];
 $directExams = [];
 
-if (count($subcats) > 0) {
-    // Has subcategories: build subcategories with their own exams
-    foreach ($subcats as $sc) {
-        $scId = (int)$sc['id'];
-        $scChildIds = getAllChildIds($conn, $scId);
-        $exams = getExamsForCategoryIds($conn, $scChildIds, $uid);
-        $subcategories[] = [
-            'id' => $scId,
-            'name' => $sc['name'],
-            'slug' => $sc['slug'],
-            'icon' => $sc['icon'],
-            'exam_count' => (int)$sc['exam_count'],
-            'exams' => $exams
-        ];
-    }
-} else {
-    // No subcategories: fetch exams directly under this category
-    $directExams = getExamsForCategoryIds($conn, [$course['category_id']], $uid);
+// Always fetch exams directly under the root category
+$directExams = getExamsForCategoryIds($conn, [$course['category_id']], $uid);
+
+// Build subcategories with their own exams
+foreach ($subcats as $sc) {
+    $scId = (int)$sc['id'];
+    $scChildIds = getAllChildIds($conn, $scId);
+    $exams = getExamsForCategoryIds($conn, $scChildIds, $uid);
+    $subcategories[] = [
+        'id' => $scId,
+        'name' => $sc['name'],
+        'slug' => $sc['slug'],
+        'icon' => $sc['icon'],
+        'exam_count' => (int)$sc['exam_count'],
+        'exams' => $exams
+    ];
 }
 
 // Get total exam count across all categories
