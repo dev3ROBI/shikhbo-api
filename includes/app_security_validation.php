@@ -44,7 +44,7 @@ function validateAppSecurity($uid, $season, $u_state) {
     }
     
     // 2. Check user active state
-    if (!$u_state || $u_state !== '1') {
+    if (!$u_state || $u_state != '1') {
         return [
             'valid' => false,
             'message' => 'User account is not active',
