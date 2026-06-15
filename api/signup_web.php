@@ -57,7 +57,7 @@ try {
     $referral = 'REF' . substr(md5(uniqid()), 0, 8);
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
 
-    $stmt = $conn->prepare("INSERT INTO users (name, email, password, google_login, status, referral_code, device_id, ip_address, created_at) VALUES (?, ?, ?, 0, 'active', ?, '', ?, NOW())");
+    $stmt = $conn->prepare("INSERT INTO users (name, email, password, google_login, status, referral_code, device_id, ip_address, role, created_at) VALUES (?, ?, ?, 0, 'active', ?, '', ?, 'Student', NOW())");
     $stmt->bind_param("sssss", $name, $email, $hashed_password, $referral, $ip);
     
     if (!$stmt->execute()) {

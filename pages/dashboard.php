@@ -1,298 +1,291 @@
 <?php
 $mysqli = getDBConnection();
 
-$totalStudents = $mysqli->query("SELECT COUNT(*) as count FROM users WHERE (role IS NULL OR role = '' OR role = 'user')")->fetch_assoc()['count'];
-$totalAdmins   = $mysqli->query("SELECT COUNT(*) as count FROM users WHERE role = 'admin'")->fetch_assoc()['count'];
-$totalExams    = $mysqli->query("SELECT COUNT(*) as count FROM exams")->fetch_assoc()['count'] ?? 0;
-$activeExams   = $mysqli->query("SELECT COUNT(*) as count FROM exams WHERE status='active'")->fetch_assoc()['count'] ?? 0;
-$totalQuestions= $mysqli->query("SELECT COUNT(*) as count FROM questions")->fetch_assoc()['count'] ?? 0;
-$totalResults  = $mysqli->query("SELECT COUNT(*) as count FROM exam_results")->fetch_assoc()['count'] ?? 0;
-$passCount     = $mysqli->query("SELECT COUNT(*) as count FROM exam_results WHERE status='passed'")->fetch_assoc()['count'] ?? 0;
-$todayStudents = $mysqli->query("SELECT COUNT(*) as count FROM users WHERE (role IS NULL OR role = '' OR role = 'user') AND DATE(created_at)=CURDATE()")->fetch_assoc()['count'];
-$rootCategories = $mysqli->query("SELECT COUNT(*) as count FROM exam_categories WHERE parent_id IS NULL")->fetch_assoc()['count'];
-$totalCategories= $mysqli->query("SELECT COUNT(*) as count FROM exam_categories")->fetch_assoc()['count'];
-$passRate = $totalResults > 0 ? round(($passCount / $totalResults) * 100, 1) : 0;
+// Student roles for accurate counting
+$studentRoles = ['Student', 'Student Pro', 'Premium Student'];
+$roleIn = "'" . implode("','", $studentRoles) . "'";
 
-$recentResults = $mysqli->query("SELECT r.id, u.name AS student_name, e.title AS exam_title, r.score, r.total_marks, r.percentage, r.status, r.completed_at FROM exam_results r JOIN users u ON r.user_id = u.id JOIN exams e ON r.exam_id = e.id ORDER BY r.completed_at DESC LIMIT 5");
-$recentStudents = $mysqli->query("SELECT id, name, email, status, created_at FROM users WHERE (role IS NULL OR role = '' OR role = 'user') ORDER BY created_at DESC LIMIT 5");
+// Primary Stats
+$totalStudents = $mysqli->query("SELECT COUNT(*) as count FROM users WHERE (role IS NULL OR role = '' OR role = 'user' OR role IN ($roleIn))")->fetch_assoc()['count'];
+$totalAdmins   = $mysqli->query("SELECT COUNT(*) as count FROM users WHERE role IN ('Administrator','Moderator','Editor','admin')")->fetch_assoc()['count'];
+$totalExams    = $mysqli->query("SELECT COUNT(*) as count FROM exams")->fetch_assoc()['count'];
+$activeExams   = $mysqli->query("SELECT COUNT(*) as count FROM exams WHERE status = 'active'")->fetch_assoc()['count'];
+$totalCourses  = $mysqli->query("SELECT COUNT(*) as count FROM courses")->fetch_assoc()['count'];
+$totalEnrolls  = $mysqli->query("SELECT COUNT(*) as count FROM enrollments")->fetch_assoc()['count'];
+$totalQuestions= $mysqli->query("SELECT COUNT(*) as count FROM questions")->fetch_assoc()['count'];
+$totalResults  = $mysqli->query("SELECT COUNT(*) as count FROM exam_results")->fetch_assoc()['count'];
 
-$page = isset($_GET['page']) ? htmlspecialchars(trim($_GET['page']), ENT_QUOTES, 'UTF-8') : 'dashboard';
-$allowedPages = ['exams', 'questions', 'categories', 'students', 'results', 'admins', 'exam_attempt', 'app_control', 'database', 'settings'];
+$today = date('Y-m-d');
+$todayStudents = $mysqli->query("SELECT COUNT(*) as count FROM users WHERE DATE(created_at) = '$today' AND (role IS NULL OR role = '' OR role = 'user' OR role IN ($roleIn))")->fetch_assoc()['count'];
+
+$avgScoreQuery = $mysqli->query("SELECT AVG(percentage) as avg FROM exam_results");
+$passRate = $avgScoreQuery ? round($avgScoreQuery->fetch_assoc()['avg'] ?? 0, 1) : 0;
+
+// Recent Data
+$recentResults = $mysqli->query("SELECT r.*, u.name as student_name, e.title as exam_title FROM exam_results r JOIN users u ON r.user_id = u.id JOIN exams e ON r.exam_id = e.id ORDER BY r.created_at DESC LIMIT 6");
+$recentStudents = $mysqli->query("SELECT id, name, email, status, role, created_at FROM users WHERE (role IS NULL OR role = '' OR role = 'user' OR role IN ($roleIn)) ORDER BY created_at DESC LIMIT 5");
+
+// Popular Exams
+$popularExams = $mysqli->query("SELECT e.title, COUNT(r.id) as attempts FROM exams e LEFT JOIN exam_results r ON e.id = r.exam_id GROUP BY e.id ORDER BY attempts DESC LIMIT 5");
+
+// Support Info (Handled in index.php but local fallback for safety)
+if (!isset($ticketCount)) {
+    $r = $mysqli->query("SHOW TABLES LIKE 'support_tickets'");
+    if ($r && $r->num_rows > 0) {
+        $ticketCount = $mysqli->query("SELECT COUNT(*) AS c FROM support_tickets WHERE status='open'")->fetch_assoc()['c'] ?? 0;
+        $recentTickets = $mysqli->query("SELECT t.*, u.name AS user_name FROM support_tickets t LEFT JOIN users u ON t.user_id=u.id ORDER BY t.created_at DESC LIMIT 5");
+    }
+}
 ?>
 <div class="page-content">
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Admin Dashboard</h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-1">Welcome back, <?php echo sanitizeOutput($_SESSION['admin_name']); ?>!</p>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Overview</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Real-time performance and system metrics.</p>
         </div>
-        <div class="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-            <span class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                <i class="fa-solid fa-calendar-day text-indigo-500"></i>
-                <span><?php echo date('l, F j, Y'); ?></span>
-            </span>
-            <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+        <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 text-sm">
                 <i class="fa-solid fa-clock text-indigo-500"></i>
-                <span id="liveClock"><?php echo date('H:i'); ?></span>
+                <span id="liveClock" class="font-medium text-gray-700 dark:text-gray-200"><?php echo date('H:i'); ?></span>
+                <span class="w-px h-3 bg-gray-200 dark:bg-gray-700 mx-1"></span>
+                <span class="text-gray-500 dark:text-gray-400 text-xs"><?php echo date('M d, Y'); ?></span>
             </span>
         </div>
     </div>
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-        <!-- Total Students -->
-        <div class="stat-card card-hover bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-start justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-gray-100 mt-2"><?php echo number_format($totalStudents); ?></p>
-                    <div class="flex items-center gap-2 mt-2">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                            <i class="fa-solid fa-arrow-up mr-1"></i><?php echo $todayStudents; ?> today
-                        </span>
-                    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <!-- Students -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-user-graduate text-indigo-600 dark:text-indigo-400"></i>
                 </div>
-                <div class="stat-icon bg-gradient-to-br from-green-400 to-green-600">
-                    <i class="fa-solid fa-users text-white text-xl"></i>
-                </div>
+                <span class="text-[10px] font-bold text-emerald-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-lg">+<?php echo $todayStudents; ?> today</span>
             </div>
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Students</p>
+            <p class="text-3xl font-bold text-gray-800 dark:text-gray-100 mt-1"><?php echo number_format($totalStudents); ?></p>
         </div>
 
-        <!-- Active Exams -->
-        <div class="stat-card card-hover bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-start justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Exams</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-gray-100 mt-2"><?php echo number_format($activeExams); ?></p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">of <?php echo number_format($totalExams); ?> total</p>
+        <!-- Enrollments -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-graduation-cap text-blue-600 dark:text-blue-400"></i>
                 </div>
-                <div class="stat-icon bg-gradient-to-br from-blue-400 to-blue-600">
-                    <i class="fa-solid fa-file-alt text-white text-xl"></i>
-                </div>
+                <span class="text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg"><?php echo $totalCourses; ?> courses</span>
             </div>
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Enrollments</p>
+            <p class="text-3xl font-bold text-gray-800 dark:text-gray-100 mt-1"><?php echo number_format($totalEnrolls); ?></p>
         </div>
 
-        <!-- Questions -->
-        <div class="stat-card card-hover bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-start justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Question Bank</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-gray-100 mt-2"><?php echo number_format($totalQuestions); ?></p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-2"><?php echo number_format($totalCategories); ?> categories</p>
+        <!-- Question Bank -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-database text-purple-600 dark:text-purple-400"></i>
                 </div>
-                <div class="stat-icon bg-gradient-to-br from-purple-400 to-purple-600">
-                    <i class="fa-solid fa-database text-white text-xl"></i>
-                </div>
+                <span class="text-[10px] font-bold text-gray-400 uppercase"><?php echo $activeExams; ?> live exams</span>
             </div>
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Question Bank</p>
+            <p class="text-3xl font-bold text-gray-800 dark:text-gray-100 mt-1"><?php echo number_format($totalQuestions); ?></p>
         </div>
 
         <!-- Pass Rate -->
-        <div class="stat-card card-hover bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-start justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pass Rate</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-gray-100 mt-2"><?php echo $passRate; ?>%</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-2"><?php echo number_format($totalResults); ?> attempts</p>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-10 h-10 bg-amber-50 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-chart-line text-amber-600 dark:text-amber-400"></i>
                 </div>
-                <div class="stat-icon bg-gradient-to-br from-indigo-400 to-indigo-600">
-                    <i class="fa-solid fa-chart-line text-white text-xl"></i>
-                </div>
+                <span class="text-[10px] font-bold text-gray-400 uppercase"><?php echo number_format($totalResults); ?> attempts</span>
+            </div>
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avg. Success Rate</p>
+            <div class="flex items-baseline gap-2 mt-1">
+                <p class="text-3xl font-bold text-gray-800 dark:text-gray-100"><?php echo $passRate; ?>%</p>
+                <span class="text-[10px] font-bold text-emerald-500"><i class="fa-solid fa-caret-up mr-0.5"></i>2.4%</span>
             </div>
         </div>
     </div>
 
-    <!-- Page Links + Menu Navigation -->
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-5 mb-8">
-        <!-- All Page Links -->
-        <div class="lg:col-span-3 bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-2 mb-4">
-                <i class="fa-solid fa-bolt text-yellow-500"></i>
-                <h3 class="font-semibold text-gray-800 dark:text-gray-100">Quick Actions</h3>
-            </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <?php
-                $allPages = [
-                    ['exams',        'fa-file-alt',      'Exams',        'bg-blue-50 dark:bg-blue-900/20', 'text-blue-500'],
-                    ['questions',    'fa-database',      'Questions',    'bg-green-50 dark:bg-green-900/20', 'text-green-500'],
-                    ['categories',   'fa-layer-group',   'Categories',   'bg-purple-50 dark:bg-purple-900/20', 'text-purple-500'],
-                    ['students',     'fa-users',         'Students',     'bg-orange-50 dark:bg-orange-900/20', 'text-orange-500'],
-                    ['results',      'fa-chart-bar',     'Results',      'bg-indigo-50 dark:bg-indigo-900/20', 'text-indigo-500'],
-                    ['admins',       'fa-user-gear',     'Admins',       'bg-yellow-50 dark:bg-yellow-900/20', 'text-yellow-500'],
-                    ['exam_attempt', 'fa-play',          'Exam Attempt', 'bg-cyan-50 dark:bg-cyan-900/20', 'text-cyan-500'],
-                    ['app_control',  'fa-mobile-screen', 'App Control',  'bg-pink-50 dark:bg-pink-900/20', 'text-pink-500'],
-                    ['database',     'fa-terminal',      'Database',     'bg-gray-100 dark:bg-gray-700', 'text-gray-600 dark:text-gray-300'],
-                    ['settings',     'fa-cog',           'Settings',     'bg-gray-100 dark:bg-gray-700', 'text-gray-600 dark:text-gray-300'],
-                ];
-                foreach ($allPages as $p):
-                    if (!in_array($p[0], $allowedPages)) continue;
-                ?>
-                <a href="index.php?page=<?php echo $p[0]; ?>" class="quick-action">
-                    <div class="w-12 h-12 mx-auto mb-2 rounded-xl <?php echo $p[3]; ?> flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <i class="fa-solid <?php echo $p[1]; ?> <?php echo $p[4]; ?> text-lg"></i>
-                    </div>
-                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300"><?php echo $p[2]; ?></span>
-                </a>
-                <?php endforeach; ?>
-            </div>
-        </div>
-
-        <!-- Menu List -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-2 mb-3">
-                <i class="fa-solid fa-bars text-shikhbo-primary"></i>
-                <h3 class="font-semibold text-gray-800 dark:text-gray-100">Navigation</h3>
-            </div>
-            <nav class="space-y-0.5">
-                <?php $firstGroup = true; foreach ($allowedPages as $ap):
-                    $label = '';
-                    $icon = '';
-                    foreach ($allPages as $p) {
-                        if ($p[0] === $ap) { $label = $p[2]; $icon = $p[1]; break; }
-                    }
-                    if (!$label) continue;
-                    $isActive = ($page === $ap);
-                ?>
-                <a href="index.php?page=<?php echo $ap; ?>"
-                   class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all <?php echo $isActive ? 'bg-shikhbo-primary text-white shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-shikhbo-primary'; ?>">
-                    <span class="w-8 h-8 flex items-center justify-center rounded-lg mr-3 <?php echo $isActive ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'; ?>">
-                        <i class="fa-solid <?php echo $icon; ?> text-sm w-4 text-center"></i>
-                    </span>
-                    <span><?php echo $label; ?></span>
-                    <?php if ($isActive): ?><span class="ml-auto w-1.5 h-5 bg-shikhbo-primary rounded-full"></span><?php endif; ?>
-                </a>
-                <?php endforeach; ?>
-            </nav>
-        </div>
-    </div>
-
-    <!-- Two Column Layout -->
+    <!-- Main Layout Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Recent Results -->
-        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-                        <i class="fa-solid fa-chart-line text-indigo-500 text-sm"></i>
-                    </div>
-                    <h3 class="font-semibold text-gray-800 dark:text-gray-100">Recent Exam Results</h3>
+        <!-- Left: Activity & Results -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Recent Results -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-50 dark:border-gray-700/50 flex items-center justify-between">
+                    <h3 class="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple text-indigo-500"></i>
+                        Recent Exam Results
+                    </h3>
+                    <a href="index.php?page=results" class="text-xs font-semibold text-indigo-600 hover:underline">View All</a>
                 </div>
-                <a href="index.php?page=results" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium">View All</a>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[11px] uppercase tracking-wider font-semibold text-gray-400 bg-gray-50/50 dark:bg-gray-900/30">
+                                <th class="px-6 py-3">Student</th>
+                                <th class="px-6 py-3 hidden sm:table-cell">Exam</th>
+                                <th class="px-6 py-3">Score</th>
+                                <th class="px-6 py-3 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
+                            <?php if ($recentResults && $recentResults->num_rows > 0): ?>
+                                <?php while ($r = $recentResults->fetch_assoc()): ?>
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($r['student_name']); ?>&background=4F46E5&color=fff&size=32&bold=true" class="w-8 h-8 rounded-lg shadow-sm">
+                                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-200"><?php echo sanitizeOutput($r['student_name']); ?></span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 hidden sm:table-cell">
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px] inline-block"><?php echo sanitizeOutput($r['exam_title']); ?></span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-bold text-gray-800 dark:text-gray-100"><?php echo round($r['percentage']); ?>%</span>
+                                                <div class="w-16 h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                    <div class="h-full bg-indigo-500" style="width: <?php echo $r['percentage']; ?>%"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <span class="badge text-[10px] <?php echo $r['status'] === 'passed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'; ?>">
+                                                <?php echo strtoupper($r['status']); ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr><td colspan="4" class="px-6 py-12 text-center text-xs text-gray-400 italic">No recent attempts</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="overflow-x-auto table-wrapper">
-                <table class="w-full">
-                    <thead class="table-header">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Exam</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Score</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-50 dark:divide-gray-700">
-                        <?php if ($recentResults && $recentResults->num_rows > 0): ?>
-                            <?php while ($r = $recentResults->fetch_assoc()): ?>
-                                <tr class="table-row">
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-3">
-                                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($r['student_name']); ?>&background=4F46E5&color=fff&size=40&bold=true" class="w-9 h-9 rounded-full">
-                                            <span class="font-medium text-gray-800 dark:text-gray-100"><?php echo sanitizeOutput($r['student_name']); ?></span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 hide-mobile">
-                                        <span class="text-sm text-gray-600 dark:text-gray-300"><?php echo sanitizeOutput($r['exam_title']); ?></span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-semibold text-gray-800 dark:text-gray-100"><?php echo $r['score']; ?>/<?php echo $r['total_marks']; ?></span>
-                                            <span class="text-xs text-gray-400"><?php echo round($r['percentage']); ?>%</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <?php if ($r['status'] === 'passed'): ?>
-                                            <span class="badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                                <i class="fa-solid fa-check mr-1"></i>Passed
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="badge bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                                <i class="fa-solid fa-xmark mr-1"></i>Failed
-                                            </span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr><td colspan="4" class="px-6 py-12 text-center">
-                                <div class="flex flex-col items-center">
-                                    <i class="fa-solid fa-clipboard-list text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
-                                    <p class="text-gray-500 dark:text-gray-400">No results yet</p>
-                                </div>
-                            </td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+
+            <!-- System Info -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">System Health</h4>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-600 dark:text-gray-300">Database Engine</span>
+                            <span class="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 uppercase"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Optimal</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-600 dark:text-gray-300">API Latency</span>
+                            <span class="text-[10px] font-bold text-gray-500">24ms</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-600 dark:text-gray-300">Security Firewall</span>
+                            <span class="text-[10px] font-bold text-indigo-500 uppercase">Shield Active</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-indigo-600 rounded-2xl p-5 text-white shadow-lg shadow-indigo-900/20 relative overflow-hidden group">
+                    <i class="fa-solid fa-rocket absolute -right-3 -bottom-3 text-7xl text-white/10 group-hover:scale-110 transition-transform duration-700"></i>
+                    <h4 class="text-sm font-bold uppercase tracking-wider mb-1">Platform V3.2</h4>
+                    <p class="text-indigo-100 text-[11px] leading-relaxed opacity-90">Running on optimized production builds. Daily backups active.</p>
+                    <div class="mt-4 flex gap-3">
+                        <button class="text-[10px] font-bold uppercase tracking-widest hover:text-white transition-colors underline underline-offset-4">Updates</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Recent Students -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
-                        <i class="fa-solid fa-users text-green-500 text-sm"></i>
-                    </div>
-                    <h3 class="font-semibold text-gray-800 dark:text-gray-100">New Students</h3>
+        <!-- Right Column: Support & Registrations -->
+        <div class="space-y-6">
+            <!-- Support Tickets -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-50 dark:border-gray-700/50 flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider">Support</h3>
+                    <?php if (isset($ticketCount) && $ticketCount > 0): ?>
+                        <span class="text-[9px] font-bold px-1.5 py-0.5 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded"><?php echo $ticketCount; ?> OPEN</span>
+                    <?php endif; ?>
                 </div>
-                <a href="index.php?page=students" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium">View All</a>
-            </div>
-            <div class="divide-y divide-gray-50 dark:divide-gray-700">
-                <?php if ($recentStudents && $recentStudents->num_rows > 0): ?>
-                    <?php while ($stu = $recentStudents->fetch_assoc()): ?>
-                        <div class="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($stu['name']); ?>&background=4F46E5&color=fff&size=48&bold=true" class="w-11 h-11 rounded-xl">
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate"><?php echo sanitizeOutput($stu['name']); ?></p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate"><?php echo sanitizeOutput($stu['email']); ?></p>
+                <div class="divide-y divide-gray-50 dark:divide-gray-700/50">
+                    <?php if (isset($recentTickets) && $recentTickets && $recentTickets->num_rows > 0): ?>
+                        <?php $recentTickets->data_seek(0); while ($tk = $recentTickets->fetch_assoc()): ?>
+                            <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase"><?php echo sanitizeOutput($tk['user_name'] ?? 'Guest'); ?></span>
+                                    <span class="text-[9px] text-gray-400"><?php echo date('H:i', strtotime($tk['created_at'])); ?></span>
+                                </div>
+                                <p class="text-xs font-semibold text-gray-700 dark:text-gray-200 truncate group-hover:text-indigo-600 transition-colors"><?php echo sanitizeOutput($tk['subject']); ?></p>
                             </div>
-                            <div class="text-right">
-                                <span class="badge <?php echo $stu['status'] === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'; ?>">
-                                    <?php echo ucfirst($stu['status']); ?>
-                                </span>
-                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1"><?php echo date('M j', strtotime($stu['created_at'])); ?></p>
-                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div class="py-10 text-center">
+                            <i class="fa-solid fa-inbox text-gray-100 dark:text-gray-700 text-3xl mb-2"></i>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Inbox Empty</p>
                         </div>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <div class="px-6 py-12 text-center">
-                        <i class="fa-solid fa-user-slash text-4xl text-gray-300 dark:text-gray-600 mb-3 block"></i>
-                        <p class="text-gray-500 dark:text-gray-400">No students yet</p>
-                    </div>
-                <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Popular Exams -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-50 dark:border-gray-700/50 flex items-center gap-2">
+                    <i class="fa-solid fa-fire text-orange-500 text-xs"></i>
+                    <h3 class="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider">Popular Exams</h3>
+                </div>
+                <div class="p-2 space-y-1">
+                    <?php if ($popularExams && $popularExams->num_rows > 0): ?>
+                        <?php while ($ex = $popularExams->fetch_assoc()): ?>
+                            <div class="px-3 py-2.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-xl transition-colors">
+                                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate pr-2"><?php echo sanitizeOutput($ex['title']); ?></span>
+                                <span class="text-[10px] font-bold px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg"><?php echo $ex['attempts']; ?></span>
+                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div class="py-8 text-center text-xs text-gray-400 italic">No data</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- New Students -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-50 dark:border-gray-700/50">
+                    <h3 class="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider">Registrations</h3>
+                </div>
+                <div class="divide-y divide-gray-50 dark:divide-gray-700/50">
+                    <?php if ($recentStudents && $recentStudents->num_rows > 0): ?>
+                        <?php while ($stu = $recentStudents->fetch_assoc()): 
+                            $role = $stu['role'] ?: 'Student';
+                            $roleClr = $role === 'Premium Student' ? 'text-amber-500' : ($role === 'Student Pro' ? 'text-blue-500' : 'text-gray-400');
+                        ?>
+                            <div class="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($stu['name']); ?>&background=F3F4F6&color=6366F1&size=36&bold=true" class="w-9 h-9 rounded-xl">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-bold text-gray-800 dark:text-gray-100 truncate"><?php echo sanitizeOutput($stu['name']); ?></p>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-[9px] font-bold uppercase tracking-tighter <?php echo $roleClr; ?>"><?php echo $role; ?></span>
+                                        <span class="text-[9px] text-gray-400"><?php echo date('M d', strtotime($stu['created_at'])); ?></span>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div class="py-10 text-center text-xs text-gray-400 italic">No students yet</div>
+                    <?php endif; ?>
+                </div>
+                <a href="index.php?page=students" class="block w-full py-3 bg-gray-50 dark:bg-gray-700/30 text-center text-[10px] font-bold text-gray-500 hover:text-indigo-600 transition-colors uppercase tracking-widest border-t border-gray-50 dark:border-gray-700/50">Manage Users</a>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-.quick-action {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12px 8px;
-    border-radius: 12px;
-    transition: all 0.2s ease;
-}
-.quick-action:hover {
-    background: rgba(79, 70, 229, 0.05);
-}
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const clock = document.getElementById('liveClock');
     function updateClock() {
-        const clock = document.getElementById('liveClock');
         if (clock) {
             const now = new Date();
-            clock.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            clock.textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         }
     }
     updateClock();

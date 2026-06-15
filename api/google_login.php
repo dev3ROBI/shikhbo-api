@@ -245,8 +245,8 @@ try {
         $status='active';
 
         $stmt=$conn->prepare("INSERT INTO users 
-            (name,email,google_login,status,referral_code,referred_by,google_id,device_id,ip_address,device_model,os_version,app_version,created_at,updated_at,last_login)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),NOW())");
+            (name,email,google_login,status,referral_code,referred_by,google_id,device_id,ip_address,device_model,os_version,app_version,role,created_at,updated_at,last_login)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'Student',NOW(),NOW(),NOW())");
         
         if(!$stmt) {
             throw new Exception(getMessage('user_creation_failed',$lang));

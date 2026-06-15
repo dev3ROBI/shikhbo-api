@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $isActive = intval($_POST['is_active'] ?? 1);
             $isFeatured = intval($_POST['is_featured'] ?? 0);
             $stmt = $mysqli->prepare("UPDATE courses SET title=?,short_description=?,description=?,cover_image=?,price=?,is_free=?,category_id=?,parent_course_id=?,course_type=?,difficulty=?,duration_hours=?,is_active=?,is_featured=? WHERE id=?");
-            $stmt->bind_param('sssssdsssssiiii', $title, $shortDesc, $desc, $coverImage, $price, $isFree, $categoryId, $parentCourseId, $courseType, $difficulty, $durationHours, $isActive, $isFeatured, $courseId);
+            $stmt->bind_param('ssssdisssisiii', $title, $shortDesc, $desc, $coverImage, $price, $isFree, $categoryId, $parentCourseId, $courseType, $difficulty, $durationHours, $isActive, $isFeatured, $courseId);
             $stmt->execute() ? $success = "Course updated successfully." : $error = $stmt->error; $stmt->close();
         } elseif ($action === 'delete_course') {
             $courseId = intval($_POST['course_id']);
@@ -309,8 +309,22 @@ foreach ($allCoursesArr as $id => $c) {
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Cover Image URL</label>
-                        <input type="text" name="cover_image" id="courseCoverImage" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced" placeholder="https://...">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Cover Image</label>
+                        <div class="flex items-center gap-4">
+                            <div id="imagePreviewContainer" class="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-900/50 flex-shrink-0">
+                                <img id="courseImagePreview" src="" alt="" class="w-full h-full object-cover hidden">
+                                <i id="imagePlaceholderIcon" class="fa-solid fa-cloud-arrow-up text-gray-300"></i>
+                            </div>
+                            <div class="flex-1 space-y-2">
+                                <input type="file" id="courseImageFile" accept="image/*" class="hidden" onchange="uploadToImgBB(this)">
+                                <button type="button" onclick="document.getElementById('courseImageFile').click()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center gap-2">
+                                    <i class="fa-solid fa-image"></i>
+                                    <span id="uploadBtnText">Select Image</span>
+                                </button>
+                                <input type="hidden" name="cover_image" id="courseCoverImage">
+                                <p id="uploadStatus" class="text-[10px] font-bold text-gray-400 uppercase hidden"></p>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Duration (Hours)</label>
@@ -343,6 +357,57 @@ foreach ($allCoursesArr as $id => $c) {
 <form id="deleteCourseForm" method="POST" class="hidden"><?php echo getCSRFTokenField();?><input type="hidden" name="action" value="delete_course"><input type="hidden" name="course_id" id="deleteCourseId"></form>
 
 <script>
+function uploadToImgBB(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const status = document.getElementById('uploadStatus');
+    const btnText = document.getElementById('uploadBtnText');
+    const preview = document.getElementById('courseImagePreview');
+    const icon = document.getElementById('imagePlaceholderIcon');
+    const hiddenInput = document.getElementById('courseCoverImage');
+
+    status.textContent = 'Uploading...';
+    status.classList.remove('hidden', 'text-red-500', 'text-emerald-500');
+    status.classList.add('text-gray-400');
+    btnText.textContent = 'Please wait...';
+    input.disabled = true;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    fetch('https://api.imgbb.com/1/upload?key=9afda477a902e97f3638eb6375188f81', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const url = data.data.url;
+            hiddenInput.value = url;
+            preview.src = url;
+            preview.classList.remove('hidden');
+            icon.classList.add('hidden');
+            status.textContent = 'Upload Successful';
+            status.classList.replace('text-gray-400', 'text-emerald-500');
+            btnText.textContent = 'Change Image';
+            showToast('Image uploaded successfully', 'success');
+        } else {
+            throw new Error('Upload failed');
+        }
+    })
+    .catch(err => {
+        status.textContent = 'Upload Failed';
+        status.classList.replace('text-gray-400', 'text-red-500');
+        btnText.textContent = 'Try Again';
+        showToast('Image upload failed', 'error');
+    })
+    .finally(() => {
+        input.disabled = false;
+        input.value = '';
+    });
+}
+
 function openAddModal() {
     document.getElementById('courseModalTitle').textContent = 'Add Course';
     document.getElementById('courseAction').value = 'add_course';
@@ -360,6 +425,14 @@ function openAddModal() {
     document.getElementById('courseDurationHours').value = '0';
     document.getElementById('courseIsActive').value = '1';
     document.getElementById('courseIsFeatured').value = '0';
+    
+    // Reset Preview
+    document.getElementById('courseImagePreview').src = '';
+    document.getElementById('courseImagePreview').classList.add('hidden');
+    document.getElementById('imagePlaceholderIcon').classList.remove('hidden');
+    document.getElementById('uploadStatus').classList.add('hidden');
+    document.getElementById('uploadBtnText').textContent = 'Select Image';
+    
     document.getElementById('courseModal').classList.remove('hidden');
 }
 function editCourse(course) {
@@ -379,6 +452,23 @@ function editCourse(course) {
     document.getElementById('courseDurationHours').value = course.duration_hours;
     document.getElementById('courseIsActive').value = course.is_active;
     document.getElementById('courseIsFeatured').value = course.is_featured;
+
+    // Handle Preview
+    const preview = document.getElementById('courseImagePreview');
+    const icon = document.getElementById('imagePlaceholderIcon');
+    if (course.cover_image) {
+        preview.src = course.cover_image;
+        preview.classList.remove('hidden');
+        icon.classList.add('hidden');
+        document.getElementById('uploadBtnText').textContent = 'Change Image';
+    } else {
+        preview.src = '';
+        preview.classList.add('hidden');
+        icon.classList.remove('hidden');
+        document.getElementById('uploadBtnText').textContent = 'Select Image';
+    }
+    document.getElementById('uploadStatus').classList.add('hidden');
+
     document.getElementById('courseModal').classList.remove('hidden');
 }
 function closeModal() { document.getElementById('courseModal').classList.add('hidden'); }

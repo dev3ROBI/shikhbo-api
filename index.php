@@ -110,6 +110,17 @@ if ($page && in_array($page, $adminPages)) {
     }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Math & Code Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+    window.MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+        options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+    </script>
     <link rel="stylesheet" href="/css/custom.css">
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 font-sans antialiased transition-colors duration-300">
@@ -223,8 +234,8 @@ if ($page && in_array($page, $adminPages)) {
 </header>
 
 <div class="flex flex-1 overflow-hidden" style="height: calc(100vh - 64px);">
-    <aside id="sidebar" class="sidebar w-64 bg-white dark:bg-gray-900 shadow-lg flex-shrink-0 overflow-y-auto transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 -translate-x-full fixed inset-y-0 left-0 z-50">
-        <div class="lg:hidden flex items-center justify-between h-16 px-5 border-b border-gray-200 dark:border-gray-700">
+    <aside id="sidebar" class="sidebar w-64 bg-white dark:bg-gray-900 shadow-lg flex-shrink-0 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 -translate-x-full fixed inset-y-0 left-0 z-50">
+        <div class="lg:hidden flex items-center justify-between h-16 px-5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             <a href="index.php" class="flex items-center space-x-2 flex-shrink-0">
                 <div class="w-9 h-9 bg-gradient-to-br from-shikhbo-primary to-indigo-400 rounded-lg flex items-center justify-center flex-shrink-0">
                     <i class="fa-solid fa-graduation-cap text-white text-sm"></i>
@@ -233,8 +244,8 @@ if ($page && in_array($page, $adminPages)) {
             </a>
             <button id="sidebarClose" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
-        <nav class="mt-3 px-2 flex-1 overflow-y-auto" style="max-height: calc(100vh - 140px);">
-            <ul class="space-y-0.5">
+        <nav class="mt-3 px-2 flex-1 overflow-y-auto custom-scrollbar">
+            <ul class="space-y-0.5 pb-4">
                 <?php foreach ($navItems as [$navPage, $navIcon, $navLabel]): $isActive = ($page === $navPage); ?>
                     <li>
                         <a href="index.php?page=<?php echo $navPage; ?>"
@@ -251,7 +262,7 @@ if ($page && in_array($page, $adminPages)) {
                 <?php endforeach; ?>
             </ul>
         </nav>
-        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
             <div class="flex items-center space-x-3">
                 <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($admin['name']); ?>&background=4F46E5&color=fff&size=36" alt="" class="w-9 h-9 rounded-full flex-shrink-0">
                 <div class="flex-1 min-w-0"><p class="text-sm font-medium text-gray-700 dark:text-gray-200 truncate"><?php echo sanitizeOutput($admin['name']); ?></p><p class="text-xs text-gray-400 dark:text-gray-500 truncate"><?php echo sanitizeOutput($admin['email']); ?></p></div>

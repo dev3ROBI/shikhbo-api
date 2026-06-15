@@ -37,7 +37,7 @@ header("X-Content-Type-Options: nosniff");
 header("X-XSS-Protection: 1; mode=block");
 header("Referrer-Policy: strict-origin-when-cross-origin");
 header("Permissions-Policy: geolocation=(), microphone=(), camera=()");
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://accounts.google.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://ui-avatars.com https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com; frame-ancestors 'none';");
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; img-src 'self' data: https://ui-avatars.com https:; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com; frame-ancestors 'none';");
 
 // =======================
 // CSRF TOKEN MANAGEMENT
@@ -109,13 +109,23 @@ function logLoginAttempt($mysqli, $email, $success) {
 // INPUT SANITIZATION
 // =======================
 function sanitize($data) {
+    if (is_array($data)) {
+        return array_map('sanitize', $data);
+    }
     $data = trim($data);
-    $data = stripslashes($data);
-    $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+    // Remove potential script tags but allow content
+    $data = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', "", $data);
+    // Don't use htmlspecialchars here to preserve Math/Code symbols like <, >, &, \
+    // We will rely on prepared statements for DB safety and controlled output rendering
     return $data;
 }
 
-function sanitizeOutput($data) {
+function sanitizeOutput($data, $isTechnical = false) {
+    if ($isTechnical) {
+        // We MUST use htmlspecialchars to prevent raw HTML from breaking the DOM
+        // MathJax and PrismJS can handle escaped entities (like &lt; for <)
+        return htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+    }
     return htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
 }
 

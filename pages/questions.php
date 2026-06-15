@@ -21,6 +21,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmt->execute(); $stmt->close();
             $success = $action==='add_question'?'Question added successfully.':'Question updated successfully.';
+        } elseif ($action === 'bulk_upload') {
+            $examId = intval($_POST['exam_id']);
+            if (!$examId) { $error = "Please select an exam first."; }
+            else {
+                $file = $_FILES['bulk_file'] ?? null;
+                if (!$file || $file['error'] !== UPLOAD_ERR_OK) { $error = "No file uploaded or upload error."; }
+                else {
+                    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                    $data = [];
+                    if ($ext === 'json') {
+                        $content = file_get_contents($file['tmp_name']);
+                        $data = json_decode($content, true);
+                        if (!is_array($data)) { $error = "Invalid JSON format."; }
+                    } elseif ($ext === 'csv') {
+                        if (($handle = fopen($file['tmp_name'], "r")) !== FALSE) {
+                            $header = fgetcsv($handle, 1000, ",");
+                            // Required columns: question_text, option_a, option_b, option_c, option_d, correct_answer, marks
+                            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                                if (count($row) >= 7) {
+                                    $data[] = [
+                                        'question_text' => $row[0], 'option_a' => $row[1], 'option_b' => $row[2],
+                                        'option_c' => $row[3], 'option_d' => $row[4], 'correct_answer' => $row[5], 'marks' => $row[6]
+                                    ];
+                                }
+                            }
+                            fclose($handle);
+                        }
+                    } else { $error = "Unsupported file type. Use CSV or JSON."; }
+
+                    if (empty($error) && !empty($data)) {
+                        $inserted = 0;
+                        $mysqli->begin_transaction();
+                        try {
+                            $stmt = $mysqli->prepare("INSERT INTO questions (exam_id, question_text, option_a, option_b, option_c, option_d, correct_answer, marks) VALUES (?,?,?,?,?,?,?,?)");
+                            foreach ($data as $q) {
+                                $qt = $q['question_text']; $oa = $q['option_a']; $ob = $q['option_b'];
+                                $oc = $q['option_c']; $od = $q['option_d']; $ca = strtolower($q['correct_answer']);
+                                $mk = intval($q['marks'] ?? 1);
+                                $stmt->bind_param('issssssi', $examId, $qt, $oa, $ob, $oc, $od, $ca, $mk);
+                                $stmt->execute();
+                                $inserted++;
+                            }
+                            $mysqli->commit();
+                            $success = "Successfully imported $inserted questions.";
+                        } catch (Exception $e) {
+                            $mysqli->rollback();
+                            $error = "Import failed: " . $e->getMessage();
+                        }
+                    } elseif (empty($error)) { $error = "No valid data found in file."; }
+                }
+            }
         } elseif ($action === 'delete_question') {
             $stmt = $mysqli->prepare("DELETE FROM questions WHERE id=?");
             $qid = intval($_POST['question_id']);
@@ -127,9 +178,14 @@ $selectedExamTitle = $examFilter ? $mysqli->query("SELECT title FROM exams WHERE
                 <?php echo $selectedExamTitle ? '<span class="text-indigo-600 dark:text-indigo-400">• ' . sanitizeOutput($selectedExamTitle) . '</span>' : ''; ?>
             </p>
         </div>
-        <button onclick="openQuestionModal()" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30">
-            <i class="fa-solid fa-plus"></i>Add Question
-        </button>
+        <div class="flex items-center gap-2">
+            <button onclick="openBulkModal()" class="px-5 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-file-import text-indigo-500"></i>Bulk Upload
+            </button>
+            <button onclick="openQuestionModal()" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30">
+                <i class="fa-solid fa-plus"></i>Add Question
+            </button>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -206,11 +262,14 @@ $selectedExamTitle = $examFilter ? $mysqli->query("SELECT title FROM exams WHERE
                                 </button>
                             </div>
                         </div>
-                        <p class="text-gray-800 dark:text-gray-100 font-medium mb-4"><?php echo sanitizeOutput($q['question_text']); ?></p>
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="text-gray-800 dark:text-gray-100 font-medium mb-4 whitespace-pre-wrap break-words">
+                            <?php echo sanitizeOutput($q['question_text'], true); ?>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <?php foreach(['a','b','c','d'] as $opt): ?>
                             <div class="text-sm px-4 py-2.5 rounded-xl <?php echo strtolower($q['correct_answer'])===$opt ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-700 text-green-800 dark:text-green-300 font-semibold' : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300'; ?>">
-                                <span class="font-bold mr-2"><?php echo strtoupper($opt); ?>.</span><?php echo sanitizeOutput($q['option_'.$opt]); ?>
+                                <span class="font-bold mr-2"><?php echo strtoupper($opt); ?>.</span>
+                                <span class="break-words"><?php echo sanitizeOutput($q['option_'.$opt], true); ?></span>
                                 <?php if (strtolower($q['correct_answer'])===$opt): ?><i class="fa-solid fa-check ml-2 text-green-600 dark:text-green-400"></i><?php endif; ?>
                             </div>
                             <?php endforeach; ?>
@@ -278,7 +337,12 @@ $selectedExamTitle = $examFilter ? $mysqli->query("SELECT title FROM exams WHERE
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Question</label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Question</label>
+                        <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest cursor-help" title="Math: $x^2$ or $$E=mc^2$$. Code: <pre><code class='language-javascript'>...</code></pre>">
+                            <i class="fa-solid fa-circle-info mr-1"></i>Supports Math & Code
+                        </span>
+                    </div>
                     <textarea name="question_text" id="qText" rows="3" required class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced" placeholder="Enter question text..."></textarea>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -305,8 +369,65 @@ $selectedExamTitle = $examFilter ? $mysqli->query("SELECT title FROM exams WHERE
 </div>
 
 <form id="deleteQForm" method="POST" class="hidden"><?php echo getCSRFTokenField(); ?><input type="hidden" name="action" value="delete_question"><input type="hidden" name="question_id" id="deleteQId"></form>
+<!-- Bulk Upload Modal -->
+<div id="bulkModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeBulkModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="modal-content w-full max-w-2xl pointer-events-auto">
+            <div class="modal-header flex items-center justify-between sticky top-0 z-10">
+                <h3 class="text-lg font-semibold">Bulk Import Questions</h3>
+                <button onclick="closeBulkModal()" class="p-2 rounded-lg transition-all"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form method="POST" enctype="multipart/form-data" class="modal-body-scroll space-y-6">
+                <?php echo getCSRFTokenField(); ?>
+                <input type="hidden" name="action" value="bulk_upload">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Target Exam</label>
+                    <select name="exam_id" required class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="">Select exam</option>
+                        <?php $exams->data_seek(0); foreach ($exams as $ex): ?>
+                        <option value="<?php echo $ex['id']; ?>" <?php echo $examFilter==$ex['id']?'selected':''; ?>><?php echo sanitizeOutput($ex['title']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Upload File (CSV or JSON)</label>
+                    <input type="file" name="bulk_file" accept=".csv, .json" required class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+
+                <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Format Instructions</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <p class="text-[11px] font-bold text-gray-600 dark:text-gray-400 uppercase">CSV Format (No Header)</p>
+                            <code class="block p-2 bg-white dark:bg-gray-800 text-[10px] rounded border border-gray-100 dark:border-gray-700 overflow-x-auto whitespace-nowrap">
+                                question, opt_a, opt_b, opt_c, opt_d, answer(a/b/c/d), marks
+                            </code>
+                        </div>
+                        <div class="space-y-2">
+                            <p class="text-[11px] font-bold text-gray-600 dark:text-gray-400 uppercase">JSON Format</p>
+                            <pre class="p-2 bg-white dark:bg-gray-800 text-[10px] rounded border border-gray-100 dark:border-gray-700 overflow-x-auto">[{"question_text":"...","option_a":"...","option_b":"...","option_c":"...","option_d":"...","correct_answer":"a","marks":1}]</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" onclick="closeBulkModal()" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-save flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>Start Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script>
+function openBulkModal() { document.getElementById('bulkModal').classList.remove('hidden'); }
+function closeBulkModal() { document.getElementById('bulkModal').classList.add('hidden'); }
+
 function toggleCatNode(header, catId) {
     const childrenDiv = document.getElementById('cat-children-' + catId);
     const examsDiv = document.getElementById('cat-exams-' + catId);
@@ -338,6 +459,18 @@ document.getElementById('treeSearch')?.addEventListener('input', function() {
         node.style.display = term === '' || node.textContent.toLowerCase().includes(term) ? '' : 'none';
     });
 });
+
+function refreshTechnicalContent() {
+    if (window.MathJax && window.MathJax.typeset) {
+        window.MathJax.typeset();
+    }
+    if (window.Prism) {
+        window.Prism.highlightAll();
+    }
+}
+
+// Initial refresh
+document.addEventListener('DOMContentLoaded', refreshTechnicalContent);
 
 function openQuestionModal(q=null) {
     document.getElementById('questionModal').classList.remove('hidden');

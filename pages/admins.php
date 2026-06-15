@@ -12,19 +12,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'add_admin') {
             $name = sanitize($_POST['name']);
             $email = sanitize($_POST['email']);
+            $role = sanitize($_POST['role'] ?? 'Editor');
             $password = password_hash($_POST['password'], PASSWORD_BCRYPT, ['cost' => 12]);
             $referral = 'ADMIN' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
-            $stmt = $mysqli->prepare("INSERT INTO users (name, email, password, role, status, referral_code) VALUES (?, ?, ?, 'admin', 'active', ?)");
-            $stmt->bind_param('ssss', $name, $email, $password, $referral);
+            $stmt = $mysqli->prepare("INSERT INTO users (name, email, password, role, status, referral_code) VALUES (?, ?, ?, ?, 'active', ?)");
+            $stmt->bind_param('sssss', $name, $email, $password, $role, $referral);
             if ($stmt->execute()) { $success = "Admin added successfully."; } else { $error = "Error: " . $stmt->error; }
             $stmt->close();
         } elseif ($action === 'edit_admin' && $adminId > 0) {
             $check = $mysqli->query("SELECT email FROM users WHERE id = $adminId")->fetch_assoc();
             if ($check && $check['email'] === $superEmail) { $error = "Super Admin cannot be edited."; }
             else {
-                $name = sanitize($_POST['name']); $email = sanitize($_POST['email']); $status = sanitize($_POST['status']);
-                $stmt = $mysqli->prepare("UPDATE users SET name=?, email=?, status=? WHERE id=? AND role='admin'");
-                $stmt->bind_param('sssi', $name, $email, $status, $adminId);
+                $name = sanitize($_POST['name']); 
+                $email = sanitize($_POST['email']); 
+                $role = sanitize($_POST['role']);
+                $status = sanitize($_POST['status']);
+                $stmt = $mysqli->prepare("UPDATE users SET name=?, email=?, role=?, status=? WHERE id=? AND role IN ('Administrator','Moderator','Editor','admin')");
+                $stmt->bind_param('ssssi', $name, $email, $role, $status, $adminId);
                 if ($stmt->execute()) { $success = "Admin updated successfully."; } else { $error = "Error: " . $stmt->error; }
                 $stmt->close();
             }
@@ -32,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $check = $mysqli->query("SELECT email FROM users WHERE id = $adminId")->fetch_assoc();
             if ($check && $check['email'] === $superEmail) { $error = "Super Admin cannot be deleted."; }
             else {
-                $stmt = $mysqli->prepare("DELETE FROM users WHERE id=? AND role='admin'");
+                $stmt = $mysqli->prepare("DELETE FROM users WHERE id=? AND role IN ('Administrator','Moderator','Editor','admin')");
                 $stmt->bind_param('i', $adminId);
                 if ($stmt->execute()) { $success = "Admin deleted successfully."; } else { $error = "Error: " . $stmt->error; }
                 $stmt->close();
@@ -41,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at FROM users WHERE role='admin' ORDER BY created_at DESC");
+$admins = $mysqli->query("SELECT id, name, email, role, status, last_login, created_at FROM users WHERE role IN ('Administrator','Moderator','Editor','admin') ORDER BY created_at DESC");
 ?>
 
 <div class="page-content">
@@ -69,6 +73,7 @@ $admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         <?php while ($admin = $admins->fetch_assoc()): 
             $isSuper = ($admin['email'] === $superEmail);
+            $roleDisplay = ($admin['role'] === 'admin') ? 'Administrator' : $admin['role'];
         ?>
         <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 p-6">
             <div class="flex items-start justify-between mb-4">
@@ -83,7 +88,7 @@ $admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at
                     </div>
                     <div>
                         <h3 class="font-semibold text-gray-800 dark:text-gray-100"><?php echo sanitizeOutput($admin['name']); ?></h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400"><?php echo sanitizeOutput($admin['email']); ?></p>
+                        <p class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest"><?php echo sanitizeOutput($roleDisplay); ?></p>
                     </div>
                 </div>
                 <span class="badge <?php echo $admin['status']==='active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'; ?>">
@@ -92,18 +97,18 @@ $admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at
             </div>
             <div class="space-y-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
                 <div class="flex items-center gap-2">
-                    <i class="fa-regular fa-clock w-5"></i>
-                    <span>Last login: <?php echo $admin['last_login'] ? date('M j, H:i', strtotime($admin['last_login'])) : 'Never'; ?></span>
+                    <i class="fa-solid fa-envelope w-5 text-gray-400"></i>
+                    <span class="truncate"><?php echo sanitizeOutput($admin['email']); ?></span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <i class="fa-regular fa-calendar w-5"></i>
-                    <span>Created: <?php echo date('M j, Y', strtotime($admin['created_at'])); ?></span>
+                    <i class="fa-regular fa-clock w-5 text-gray-400"></i>
+                    <span>Last login: <?php echo $admin['last_login'] ? date('M j, H:i', strtotime($admin['last_login'])) : 'Never'; ?></span>
                 </div>
             </div>
             <div class="flex items-center gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <?php if ($isSuper): ?>
-                    <span class="text-xs text-yellow-600 dark:text-yellow-400 font-medium flex items-center gap-1">
-                        <i class="fa-solid fa-shield-halved"></i>Super Admin
+                    <span class="text-xs text-yellow-600 dark:text-yellow-400 font-medium flex items-center gap-1 mx-auto">
+                        <i class="fa-solid fa-shield-halved"></i>System Super Admin
                     </span>
                 <?php else: ?>
                     <button onclick="editAdmin(<?php echo htmlspecialchars(json_encode($admin), ENT_QUOTES, 'UTF-8'); ?>)" class="flex-1 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors flex items-center justify-center gap-1">
@@ -127,7 +132,7 @@ $admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at
 
 <!-- Add Admin Modal -->
 <div id="addAdminModal" class="fixed inset-0 z-50 hidden">
-    <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeAddModal()"></div>
+    <div class="absolute inset-0 modal-backdrop" onclick="closeAddModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
         <div class="modal-content w-full max-w-md pointer-events-auto">
             <div class="modal-header flex items-center justify-between sticky top-0 z-10">
@@ -148,6 +153,14 @@ $admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at
                     <input type="email" name="email" required class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced">
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Role</label>
+                    <select name="role" required class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="Administrator">Administrator</option>
+                        <option value="Moderator">Moderator</option>
+                        <option value="Editor">Editor</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
                     <input type="password" name="password" required minlength="8" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced">
                 </div>
@@ -162,7 +175,7 @@ $admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at
 
 <!-- Edit Admin Modal -->
 <div id="editAdminModal" class="fixed inset-0 z-50 hidden">
-    <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeEditModal()"></div>
+    <div class="absolute inset-0 modal-backdrop" onclick="closeEditModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
         <div class="modal-content w-full max-w-md pointer-events-auto">
             <div class="modal-header flex items-center justify-between sticky top-0 z-10">
@@ -182,6 +195,14 @@ $admins = $mysqli->query("SELECT id, name, email, status, last_login, created_at
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
                     <input type="email" name="email" id="edit-email" required class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Role</label>
+                    <select name="role" id="edit-role" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="Administrator">Administrator</option>
+                        <option value="Moderator">Moderator</option>
+                        <option value="Editor">Editor</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
@@ -209,6 +230,7 @@ function editAdmin(admin) {
     document.getElementById('edit-id').value = admin.id;
     document.getElementById('edit-name').value = admin.name;
     document.getElementById('edit-email').value = admin.email;
+    document.getElementById('edit-role').value = admin.role === 'admin' ? 'Administrator' : admin.role;
     document.getElementById('edit-status').value = admin.status;
     document.getElementById('editAdminModal').classList.remove('hidden');
 }

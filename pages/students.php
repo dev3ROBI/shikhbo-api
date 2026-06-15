@@ -1,69 +1,79 @@
 <?php
 $mysqli = getDBConnection();
 
+$studentRoles = ['Student', 'Student Pro', 'Premium Student'];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $error = 'Security token validation failed.';
     } else {
         $action = $_POST['action'] ?? '';
-        $studentId = intval($_POST['student_id'] ?? 0);
-
-        if ($action === 'toggle_status') {
-            $newStatus = $_POST['new_status'] === 'active' ? 'active' : 'suspended';
-            $stmt = $mysqli->prepare("UPDATE users SET status=? WHERE id=? AND (role IS NULL OR role='' OR role='user')");
-            $stmt->bind_param('si', $newStatus, $studentId);
-            $stmt->execute(); $stmt->close();
-            $success = "Status updated successfully.";
-        } elseif ($action === 'delete') {
-            $stmt = $mysqli->prepare("DELETE FROM users WHERE id=? AND (role IS NULL OR role='' OR role='user')");
-            $stmt->bind_param('i', $studentId);
-            $stmt->execute(); $stmt->close();
-            $success = "Student deleted successfully.";
-        } elseif ($action === 'edit_student') {
+        
+        if ($action === 'edit_student') {
+            $id = intval($_POST['student_id']);
             $name = sanitize($_POST['name']);
             $email = sanitize($_POST['email']);
+            $role = sanitize($_POST['role'] ?? 'Student');
             $status = sanitize($_POST['status']);
-            $stmt = $mysqli->prepare("UPDATE users SET name=?, email=?, status=? WHERE id=? AND (role IS NULL OR role='' OR role='user')");
-            $stmt->bind_param('sssi', $name, $email, $status, $studentId);
-            $stmt->execute(); $stmt->close();
-            $success = "Student updated successfully.";
+            
+            $stmt = $mysqli->prepare("UPDATE users SET name = ?, email = ?, role = ?, status = ? WHERE id = ?");
+            $stmt->bind_param("ssssi", $name, $email, $role, $status, $id);
+            if ($stmt->execute()) {
+                $success = "Student updated successfully.";
+            } else {
+                $error = "Error updating student.";
+            }
+            $stmt->close();
+        } elseif ($action === 'delete') {
+            $id = intval($_POST['student_id']);
+            $stmt = $mysqli->prepare("DELETE FROM users WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            if ($stmt->execute()) {
+                $success = "Student deleted successfully.";
+            } else {
+                $error = "Error deleting student.";
+            }
+            $stmt->close();
+        } elseif ($action === 'toggle_status') {
+            $id = intval($_POST['student_id']);
+            $status = sanitize($_POST['status']);
+            $stmt = $mysqli->prepare("UPDATE users SET status = ? WHERE id = ?");
+            $stmt->bind_param("si", $status, $id);
+            $stmt->execute();
+            $stmt->close();
+            $success = "Student status updated.";
         }
     }
 }
 
+// Filters
 $search = sanitize($_GET['search'] ?? '');
 $statusFilter = sanitize($_GET['status'] ?? '');
-$page_num = max(1, intval($_GET['p'] ?? 1));
-$limit = 15;
-$offset = ($page_num - 1) * $limit;
+$roleFilter = sanitize($_GET['role'] ?? '');
 
-$where = "WHERE (role IS NULL OR role = '' OR role = 'user')";
-$params = []; $types = '';
+$roleIn = "'" . implode("','", $studentRoles) . "'";
+$where = "(role IS NULL OR role = '' OR role = 'user' OR role IN ($roleIn))";
 
 if ($search) {
-    $where .= " AND (name LIKE ? OR email LIKE ?)";
-    $sp = "%{$search}%";
-    $params = [$sp, $sp]; $types = 'ss';
+    $where .= " AND (name LIKE '%$search%' OR email LIKE '%$search%')";
 }
 if ($statusFilter) {
-    $where .= " AND status = ?";
-    $params[] = $statusFilter; $types .= 's';
+    $where .= " AND status = '$statusFilter'";
+}
+if ($roleFilter) {
+    $where .= " AND role = '$roleFilter'";
 }
 
-$countStmt = $mysqli->prepare("SELECT COUNT(*) as total FROM users {$where}");
-if ($params) $countStmt->bind_param($types, ...$params);
-$countStmt->execute();
-$totalStudents = $countStmt->get_result()->fetch_assoc()['total'];
-$countStmt->close();
+// Pagination
+$limit = 15;
+$page_num = isset($_GET['p']) ? max(1, intval($_GET['p'])) : 1;
+$offset = ($page_num - 1) * $limit;
+
+$totalStudents = $mysqli->query("SELECT COUNT(*) as count FROM users WHERE $where")->fetch_assoc()['count'];
 $totalPages = ceil($totalStudents / $limit);
 
-$query = "SELECT id, name, email, google_login, status, referral_code, device_model, ip_address, last_login, created_at FROM users {$where} ORDER BY created_at DESC LIMIT ? OFFSET ?";
-$stmt = $mysqli->prepare($query);
-if ($params) {
-    $stmt->bind_param($types . 'ii', ...[...$params, $limit, $offset]);
-} else {
-    $stmt->bind_param('ii', $limit, $offset);
-}
+$stmt = $mysqli->prepare("SELECT * FROM users WHERE $where ORDER BY created_at DESC LIMIT ? OFFSET ?");
+$stmt->bind_param("ii", $limit, $offset);
 $stmt->execute();
 $students = $stmt->get_result();
 $stmt->close();
@@ -91,33 +101,41 @@ $stmt->close();
         </div>
         <div class="flex items-center gap-2">
             <span class="px-3 py-1.5 text-xs font-medium rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                <i class="fa-solid fa-check mr-1"></i><?php echo $mysqli->query("SELECT COUNT(*) as c FROM users WHERE status='active' AND (role IS NULL OR role='' OR role='user')")->fetch_assoc()['c']; ?> Active
+                <i class="fa-solid fa-check mr-1"></i><?php echo $mysqli->query("SELECT COUNT(*) as c FROM users WHERE status='active' AND $where")->fetch_assoc()['c']; ?> Active
             </span>
         </div>
     </div>
 
     <!-- Search & Filter -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 mb-6 border border-gray-100 dark:border-gray-700">
-        <form method="GET" action="index.php" class="flex flex-col sm:flex-row gap-3">
+        <form method="GET" action="index.php" class="flex flex-col lg:flex-row gap-3">
             <input type="hidden" name="page" value="students">
             <div class="relative flex-1">
                 <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 <input type="text" name="search" value="<?php echo sanitizeOutput($search); ?>" placeholder="Search by name or email..." class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced">
             </div>
-            <select name="status" class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                <option value="">All Status</option>
-                <option value="active" <?php echo $statusFilter==='active'?'selected':''; ?>>Active</option>
-                <option value="suspended" <?php echo $statusFilter==='suspended'?'selected':''; ?>>Suspended</option>
-                <option value="inactive" <?php echo $statusFilter==='inactive'?'selected':''; ?>>Inactive</option>
-            </select>
-            <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2">
-                <i class="fa-solid fa-filter"></i>Filter
-            </button>
-            <?php if ($search || $statusFilter): ?>
-            <a href="index.php?page=students" class="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
-                <i class="fa-solid fa-xmark"></i>Clear
-            </a>
-            <?php endif; ?>
+            <div class="flex flex-wrap gap-2">
+                <select name="role" class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="">All Roles</option>
+                    <?php foreach($studentRoles as $r): ?>
+                    <option value="<?php echo $r; ?>" <?php echo $roleFilter===$r?'selected':''; ?>><?php echo $r; ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <select name="status" class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="">All Status</option>
+                    <option value="active" <?php echo $statusFilter==='active'?'selected':''; ?>>Active</option>
+                    <option value="suspended" <?php echo $statusFilter==='suspended'?'selected':''; ?>>Suspended</option>
+                    <option value="inactive" <?php echo $statusFilter==='inactive'?'selected':''; ?>>Inactive</option>
+                </select>
+                <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-filter"></i>Filter
+                </button>
+                <?php if ($search || $statusFilter || $roleFilter): ?>
+                <a href="index.php?page=students" class="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-xmark"></i>Clear
+                </a>
+                <?php endif; ?>
+            </div>
         </form>
     </div>
 
@@ -128,6 +146,7 @@ $stmt->close();
                 <thead class="table-header">
                     <tr>
                         <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Role</th>
                         <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Auth</th>
                         <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Status</th>
                         <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hide-mobile">Last Login</th>
@@ -136,7 +155,12 @@ $stmt->close();
                 </thead>
                 <tbody class="divide-y divide-gray-50 dark:divide-gray-700">
                     <?php if ($students->num_rows > 0): ?>
-                        <?php while ($stu = $students->fetch_assoc()): ?>
+                        <?php while ($stu = $students->fetch_assoc()): 
+                            $role = $stu['role'] ?: 'Student';
+                            $roleCls = 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+                            if ($role === 'Student Pro') $roleCls = 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+                            if ($role === 'Premium Student') $roleCls = 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+                        ?>
                             <tr class="table-row">
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-3">
@@ -146,6 +170,9 @@ $stmt->close();
                                             <p class="text-xs text-gray-500 dark:text-gray-400"><?php echo sanitizeOutput($stu['email']); ?></p>
                                         </div>
                                     </div>
+                                </td>
+                                <td class="px-4 py-4 hide-mobile">
+                                    <span class="badge <?php echo $roleCls; ?>"><?php echo $role; ?></span>
                                 </td>
                                 <td class="px-4 py-4 hide-mobile">
                                     <?php if ($stu['google_login']): ?>
@@ -185,7 +212,7 @@ $stmt->close();
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="5" class="px-6 py-16 text-center">
+                        <tr><td colspan="6" class="px-6 py-16 text-center">
                             <div class="flex flex-col items-center">
                                 <i class="fa-solid fa-users-slash text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
                                 <p class="text-gray-500 dark:text-gray-400 text-lg">No students found</p>
@@ -201,7 +228,7 @@ $stmt->close();
             <p class="text-sm text-gray-500 dark:text-gray-400">Page <?php echo $page_num; ?> of <?php echo $totalPages; ?></p>
             <div class="flex items-center gap-1">
                 <?php for ($i = 1; $i <= min($totalPages, 5); $i++): ?>
-                    <a href="index.php?page=students&p=<?php echo $i; ?><?php echo $search?'&search='.urlencode($search):''; ?><?php echo $statusFilter?'&status='.$statusFilter:''; ?>" 
+                    <a href="index.php?page=students&p=<?php echo $i; ?><?php echo $search?'&search='.urlencode($search):''; ?><?php echo $statusFilter?'&status='.$statusFilter:''; ?><?php echo $roleFilter?'&role='.$roleFilter:''; ?>" 
                        class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-medium transition-colors <?php echo $i===$page_num?'bg-indigo-600 text-white':'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'; ?>">
                         <?php echo $i; ?>
                     </a>
@@ -218,48 +245,50 @@ $stmt->close();
     </div>
 </div>
 
-<!-- View Modal -->
 <div id="viewStudentModal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeViewModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
         <div class="modal-content w-full max-w-lg pointer-events-auto">
             <div class="modal-header flex items-center justify-between sticky top-0 z-10">
-                <h3 class="text-lg font-semibold">Student Details</h3>
-                <button onclick="closeViewModal()" class="p-2 rounded-lg transition-all">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
+                <h3 class="text-lg font-semibold">Student Profile</h3>
+                <button onclick="closeViewModal()" class="p-2 rounded-lg transition-all"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <div id="viewStudentContent" class="modal-body-scroll"></div>
+            <div id="viewStudentContent" class="modal-body-scroll p-6"></div>
         </div>
     </div>
 </div>
 
-<!-- Edit Modal -->
 <div id="editStudentModal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/50 modal-backdrop" onclick="closeEditModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div class="modal-content w-full max-w-lg pointer-events-auto">
+        <div class="modal-content w-full max-w-md pointer-events-auto">
             <div class="modal-header flex items-center justify-between sticky top-0 z-10">
                 <h3 class="text-lg font-semibold">Edit Student</h3>
-                <button onclick="closeEditModal()" class="p-2 rounded-lg transition-all">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
+                <button onclick="closeEditModal()" class="p-2 rounded-lg transition-all"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <form method="POST" class="modal-body-scroll space-y-4">
                 <?php echo getCSRFTokenField(); ?>
                 <input type="hidden" name="action" value="edit_student">
                 <input type="hidden" name="student_id" id="editStudentId">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Name</label>
-                    <input type="text" name="name" id="editStudentName" required class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                    <input type="text" name="name" id="editStudentName" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
-                    <input type="email" name="email" id="editStudentEmail" required class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <input type="email" name="email" id="editStudentEmail" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Status</label>
-                    <select name="status" id="editStudentStatus" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+                    <select name="role" id="editStudentRole" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <?php foreach($studentRoles as $r): ?>
+                        <option value="<?php echo $r; ?>"><?php echo $r; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                    <select name="status" id="editStudentStatus" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                         <option value="active">Active</option>
                         <option value="suspended">Suspended</option>
                         <option value="inactive">Inactive</option>
@@ -274,89 +303,60 @@ $stmt->close();
     </div>
 </div>
 
-<!-- Hidden Action Form -->
 <form id="actionForm" method="POST" class="hidden">
     <?php echo getCSRFTokenField(); ?>
-    <input type="hidden" name="student_id" id="actionStudentId">
     <input type="hidden" name="action" id="actionType">
-    <input type="hidden" name="new_status" id="actionStatus">
+    <input type="hidden" name="student_id" id="actionStudentId">
+    <input type="hidden" name="status" id="actionStatus">
 </form>
 
 <script>
-function viewStudent(stu) {
-    document.getElementById('viewStudentContent').innerHTML = `
+function viewStudent(s) {
+    const c = document.getElementById('viewStudentContent');
+    const role = s.role || 'Student';
+    c.innerHTML = `
         <div class="flex items-center gap-4 mb-6">
-            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(stu.name)}&background=4F46E5&color=fff&size=64&bold=true" class="w-16 h-16 rounded-2xl">
+            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=4F46E5&color=fff&size=64&bold=true" class="w-16 h-16 rounded-xl">
             <div>
-                <p class="text-lg font-semibold text-gray-800 dark:text-gray-100">${stu.name}</p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">#${stu.id}</p>
+                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">${s.name}</h2>
+                <p class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">${role}</p>
             </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Email</p>
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-100">${stu.email}</p>
-            </div>
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-100 capitalize">${stu.status}</p>
-            </div>
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Auth Method</p>
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-100">${stu.google_login == 1 ? 'Google' : 'Email'}</p>
-            </div>
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Referral Code</p>
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-100">${stu.referral_code || '—'}</p>
-            </div>
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Device</p>
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-100">${stu.device_model || '—'}</p>
-            </div>
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">IP Address</p>
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-100">${stu.ip_address || '—'}</p>
-            </div>
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Last Login</p>
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-100">${stu.last_login || 'Never'}</p>
-            </div>
-            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Joined</p>
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-100">${stu.created_at}</p>
-            </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p class="text-gray-400 text-xs uppercase mb-1">Email</p><p class="font-medium text-gray-800 dark:text-gray-100 truncate">${s.email}</p></div>
+            <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p class="text-gray-400 text-xs uppercase mb-1">Status</p><p class="font-medium text-gray-800 dark:text-gray-100 capitalize">${s.status}</p></div>
+            <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p class="text-gray-400 text-xs uppercase mb-1">Auth Type</p><p class="font-medium text-gray-800 dark:text-gray-100">${s.google_login == 1 ? 'Google' : 'Email'}</p></div>
+            <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p class="text-gray-400 text-xs uppercase mb-1">Joined</p><p class="font-medium text-gray-800 dark:text-gray-100">${new Date(s.created_at).toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'})}</p></div>
+            <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p class="text-gray-400 text-xs uppercase mb-1">Last Login</p><p class="font-medium text-gray-800 dark:text-gray-100">${s.last_login ? s.last_login : 'Never'}</p></div>
+            <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p class="text-gray-400 text-xs uppercase mb-1">Device</p><p class="font-medium text-gray-800 dark:text-gray-100">${s.device_model || 'Unknown'}</p></div>
         </div>
     `;
     document.getElementById('viewStudentModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 }
 
-function closeViewModal() {
-    document.getElementById('viewStudentModal').classList.add('hidden');
-}
-
-function editStudent(stu) {
-    document.getElementById('editStudentId').value = stu.id;
-    document.getElementById('editStudentName').value = stu.name;
-    document.getElementById('editStudentEmail').value = stu.email;
-    document.getElementById('editStudentStatus').value = stu.status;
+function editStudent(s) {
+    document.getElementById('editStudentId').value = s.id;
+    document.getElementById('editStudentName').value = s.name;
+    document.getElementById('editStudentEmail').value = s.email;
+    document.getElementById('editStudentRole').value = s.role || 'Student';
+    document.getElementById('editStudentStatus').value = s.status;
     document.getElementById('editStudentModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 }
 
-function closeEditModal() {
-    document.getElementById('editStudentModal').classList.add('hidden');
-}
+function closeViewModal() { document.getElementById('viewStudentModal').classList.add('hidden'); document.body.style.overflow = ''; }
+function closeEditModal() { document.getElementById('editStudentModal').classList.add('hidden'); document.body.style.overflow = ''; }
 
 function toggleStudentStatus(id, newStatus) {
-    confirmAction(`Change status to ${newStatus}?`, () => {
-        document.getElementById('actionStudentId').value = id;
-        document.getElementById('actionType').value = 'toggle_status';
-        document.getElementById('actionStatus').value = newStatus;
-        document.getElementById('actionForm').submit();
-    });
+    document.getElementById('actionStudentId').value = id;
+    document.getElementById('actionStatus').value = newStatus;
+    document.getElementById('actionType').value = 'toggle_status';
+    document.getElementById('actionForm').submit();
 }
 
 function deleteStudent(id) {
-    confirmAction('Permanently delete this student? This cannot be undone.', () => {
+    confirmAction('Delete this student? This cannot be undone.', () => {
         document.getElementById('actionStudentId').value = id;
         document.getElementById('actionType').value = 'delete';
         document.getElementById('actionForm').submit();

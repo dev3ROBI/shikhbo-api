@@ -36,7 +36,7 @@ if (!$userId) {
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
 $conn->set_charset('utf8mb4');
 
-$stmt = $conn->prepare("SELECT id, name, email, profile_image, referral_code, login_method, language, tagline, streak, member_since, is_premium, status, created_at FROM users WHERE id = ?");
+$stmt = $conn->prepare("SELECT id, name, email, role, profile_image, referral_code, login_method, language, tagline, streak, member_since, is_premium, status, created_at FROM users WHERE id = ?");
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -56,6 +56,7 @@ echo json_encode([
         'user_id' => (int)$user['id'],
         'name' => $user['name'],
         'email' => $user['email'],
+        'role' => $user['role'] ?? 'Student',
         'profile_image' => $user['profile_image'] ?? '',
         'referral_code' => $user['referral_code'] ?? '',
         'login_method' => $user['login_method'] ?? 'email',

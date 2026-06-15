@@ -104,7 +104,7 @@ try {
     $app_version = $device_info['app_version'] ?? '';
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
 
-    $stmt = $conn->prepare("INSERT INTO users (name, email, password, google_login, status, referral_code, referred_by, device_id, ip_address, device_model, os_version, app_version, created_at) VALUES (?, ?, ?, 0, 'active', ?, ?, ?, ?, ?, ?, ?, NOW())");
+    $stmt = $conn->prepare("INSERT INTO users (name, email, password, google_login, status, referral_code, referred_by, device_id, ip_address, device_model, os_version, app_version, role, created_at) VALUES (?, ?, ?, 0, 'active', ?, ?, ?, ?, ?, ?, ?, 'Student', NOW())");
     $stmt->bind_param("ssssissssss", $name, $email, $hashed_password, $referral, $referred_by, $device_id, $ip, $device_model, $os_version, $app_version);
     
     if (!$stmt->execute()) {

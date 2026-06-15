@@ -310,20 +310,25 @@ function showPage(page){
     pageQuestions.forEach((q, idx) => {
         const qNum = start + idx + 1;
         const selected = answers[q.id] || '';
+        
+        // Technical content bypass is handled via JS renderers, 
+        // but we ensure the output function allows the symbols.
         html += `
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/20 border border-gray-100 dark:border-gray-700 p-5" id="q-card-${q.id}">
             <div class="flex items-start justify-between mb-3">
-                <div>
+                <div class="flex-1 min-w-0">
                     <span class="text-xs text-gray-400 dark:text-gray-500 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">Q${qNum}</span>
-                    <p class="text-gray-800 dark:text-gray-100 font-medium mt-2">${q.question_text}</p>
+                    <div class="text-gray-800 dark:text-gray-100 font-medium mt-2 whitespace-pre-wrap break-words">
+                        ${q.question_text}
+                    </div>
                 </div>
-                <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">${q.marks} mark${q.marks>1?'s':''}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full flex-shrink-0 ml-4">${q.marks} mark${q.marks>1?'s':''}</span>
             </div>
             <div class="mt-4 space-y-2">
                 ${['a','b','c','d'].map(opt => `
                     <label class="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selected===opt?'border-shikhbo-primary dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20':''}">
                         <input type="radio" name="q_${q.id}" value="${opt}" class="w-4 h-4 text-shikhbo-primary dark:text-indigo-400" onchange="selectAnswer(${q.id},'${opt}')" ${selected===opt?'checked':''}>
-                        <span class="text-sm text-gray-700 dark:text-gray-200">${q['option_'+opt]}</span>
+                        <span class="text-sm text-gray-700 dark:text-gray-200 break-words">${q['option_'+opt]}</span>
                     </label>
                 `).join('')}
             </div>
@@ -331,7 +336,13 @@ function showPage(page){
     });
     document.getElementById('questionsContainer').innerHTML = html;
     updatePagination();
+    refreshTechnicalContent(); // Re-trigger MathJax & Prism
     window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function refreshTechnicalContent() {
+    if (window.MathJax && window.MathJax.typeset) { window.MathJax.typeset(); }
+    if (window.Prism) { window.Prism.highlightAll(); }
 }
 
 function selectAnswer(qid, option){
