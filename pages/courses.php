@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $isActive = intval($_POST['is_active'] ?? 1);
             $isFeatured = intval($_POST['is_featured'] ?? 0);
             $stmt = $mysqli->prepare("UPDATE courses SET title=?,short_description=?,description=?,cover_image=?,price=?,is_free=?,category_id=?,parent_course_id=?,course_type=?,difficulty=?,duration_hours=?,is_active=?,is_featured=? WHERE id=?");
-            $stmt->bind_param('ssssdisssisiii', $title, $shortDesc, $desc, $coverImage, $price, $isFree, $categoryId, $parentCourseId, $courseType, $difficulty, $durationHours, $isActive, $isFeatured, $courseId);
+            $stmt->bind_param('ssssdissssiiii', $title, $shortDesc, $desc, $coverImage, $price, $isFree, $categoryId, $parentCourseId, $courseType, $difficulty, $durationHours, $isActive, $isFeatured, $courseId);
             $stmt->execute() ? $success = "Course updated successfully." : $error = $stmt->error; $stmt->close();
         } elseif ($action === 'delete_course') {
             $courseId = intval($_POST['course_id']);

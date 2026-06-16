@@ -118,10 +118,8 @@ $stmt->close();
         $stmt->bind_param('sssi', $googleId, $ip, $userAgent, $userId);
         $stmt->execute();
         $stmt->close();
-        // Update profile picture from Google
-        if ($googlePicture) {
-            $user['profile_image'] = saveGoogleProfile($googlePicture, $userId, $mysqli);
-        }
+        // Use the existing profile_image from the database — don't re-fetch from Google
+        // Google profile picture is only saved on first-time registration (new user)
     } else {
         $role = 'Member';
         $referralCode = 'WEB' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
