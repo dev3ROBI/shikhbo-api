@@ -172,9 +172,24 @@ $tables = [
         option_d VARCHAR(255),
         correct_answer CHAR(1) NOT NULL,
         marks INT DEFAULT 1,
+        explanation TEXT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
         FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    'exam_answers' => "CREATE TABLE IF NOT EXISTS exam_answers (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        exam_result_id INT UNSIGNED NOT NULL,
+        question_id INT UNSIGNED NOT NULL,
+        selected_option CHAR(1) DEFAULT NULL,
+        is_correct TINYINT(1) DEFAULT 0,
+        marks_obtained INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (exam_result_id) REFERENCES exam_results(id) ON DELETE CASCADE,
+        FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+        INDEX idx_exam_result (exam_result_id),
+        INDEX idx_question (question_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
     'exam_results' => "CREATE TABLE IF NOT EXISTS exam_results (
@@ -287,6 +302,9 @@ $migrations = [
         "is_free TINYINT(1) DEFAULT 1 AFTER passing_percentage",
         "price DECIMAL(10,2) DEFAULT 0.00 AFTER is_free",
         "course_id INT UNSIGNED DEFAULT NULL AFTER category_id"
+    ],
+    'questions' => [
+        "explanation TEXT NULL AFTER marks"
     ]
 ];
 
