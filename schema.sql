@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS users (
     streak INT DEFAULT 0,
     member_since DATE DEFAULT NULL,
     is_premium TINYINT(1) DEFAULT 0,
+    premium_expiry_date DATETIME DEFAULT NULL,
     role VARCHAR(32) DEFAULT NULL,
     last_login DATETIME NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -238,6 +239,25 @@ CREATE TABLE IF NOT EXISTS exam_answers (
     FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
     INDEX idx_exam_result (exam_result_id),
     INDEX idx_question (question_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- PREMIUM PURCHASES
+-- Tracks all premium plan purchases (Google Play).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS premium_purchases (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    product_id VARCHAR(64) NOT NULL,
+    purchase_token VARCHAR(512) NOT NULL,
+    order_id VARCHAR(128) DEFAULT NULL,
+    purchase_time DATETIME DEFAULT NULL,
+    expiry_date DATETIME DEFAULT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user (user_id),
+    INDEX idx_active (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================

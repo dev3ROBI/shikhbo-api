@@ -253,6 +253,20 @@ $tables = [
         INDEX idx_featured (is_featured)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
+    'premium_purchases' => "CREATE TABLE IF NOT EXISTS premium_purchases (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id INT UNSIGNED NOT NULL,
+        product_id VARCHAR(64) NOT NULL,
+        purchase_token VARCHAR(512) NOT NULL,
+        order_id VARCHAR(128) DEFAULT NULL,
+        purchase_time DATETIME DEFAULT NULL,
+        expiry_date DATETIME DEFAULT NULL,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user (user_id),
+        INDEX idx_active (is_active)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
     'enrollments' => "CREATE TABLE IF NOT EXISTS enrollments (
         id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         user_id INT UNSIGNED NOT NULL,
@@ -294,7 +308,8 @@ $migrations = [
         "member_since DATE DEFAULT NULL",
         "is_premium TINYINT(1) DEFAULT 0",
         "role VARCHAR(32) DEFAULT NULL",
-        "total_xp INT DEFAULT 0"
+        "total_xp INT DEFAULT 0",
+        "premium_expiry_date DATETIME DEFAULT NULL"
     ],
     'exams' => [
         "category_id INT UNSIGNED NULL AFTER subject_id",

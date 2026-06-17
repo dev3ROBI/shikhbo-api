@@ -76,6 +76,59 @@ try {
 
     $examId = $examResult['exam_id'];
 
+    // Determine explanation access: 
+    // - Paid course (is_free=0): user must be enrolled
+    // - Free course / standalone exam: user must be premium
+    $canViewExplanations = false;
+    $isPremiumUser = false;
+
+    // Check user's premium status
+    $userStmt = $conn->prepare("SELECT is_premium FROM users WHERE id = ?");
+    $userStmt->bind_param('i', $uid);
+    $userStmt->execute();
+    $userRow = $userStmt->get_result()->fetch_assoc();
+    $userStmt->close();
+    if ($userRow) {
+        $isPremiumUser = (bool)$userRow['is_premium'];
+    }
+
+    // Get exam's course info
+    $courseStmt = $conn->prepare("
+        SELECT e.course_id, e.is_free as exam_is_free, 
+               c.is_free as course_is_free, c.id as cid
+        FROM exams e
+        LEFT JOIN courses c ON e.course_id = c.id
+        WHERE e.id = ?
+    ");
+    $courseStmt->bind_param('i', $examId);
+    $courseStmt->execute();
+    $courseRow = $courseStmt->get_result()->fetch_assoc();
+    $courseStmt->close();
+
+    if ($courseRow && $courseRow['cid']) {
+        // Exam belongs to a course
+        if ((int)$courseRow['course_is_free'] === 1) {
+            // Free course → needs premium
+            $canViewExplanations = $isPremiumUser;
+        } else {
+            // Paid course → needs enrollment
+            $enrollStmt = $conn->prepare("SELECT id FROM enrollments WHERE user_id = ? AND course_id = ? AND status = 'active'");
+            $enrollStmt->bind_param('ii', $uid, $courseRow['cid']);
+            $enrollStmt->execute();
+            $enrolled = $enrollStmt->get_result()->fetch_assoc();
+            $enrollStmt->close();
+            $canViewExplanations = (bool)$enrolled;
+        }
+    } else {
+        // Standalone exam (no course) → use exam's is_free
+        if ($courseRow && (int)$courseRow['exam_is_free'] === 1) {
+            $canViewExplanations = $isPremiumUser;
+        } else {
+            // Paid standalone exam → needs premium as proxy
+            $canViewExplanations = $isPremiumUser;
+        }
+    }
+
     // Fetch questions with user answers via LEFT JOIN
     // This ensures ALL questions are returned, even those the user didn't answer
     $questionsStmt = $conn->prepare("
@@ -128,6 +181,8 @@ try {
         'completed_at' => $examResult['completed_at'],
         'questions' => $questions,
         'details' => $details,
+        'can_view_explanations' => $canViewExplanations,
+        'is_premium' => $isPremiumUser,
         'access' => 'unlimited'
     ], JSON_UNESCAPED_UNICODE);
 
