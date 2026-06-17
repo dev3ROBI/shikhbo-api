@@ -78,10 +78,26 @@ $stmt = $conn->prepare("INSERT INTO exam_results (user_id, exam_id, score, total
 $percentage = ($totalMarks > 0) ? ($score / $totalMarks) * 100 : 0;
 $stmt->bind_param('iiidds', $userId, $examId, $score, $totalMarks, $percentage, $status);
 $stmt->execute();
+$examResultId = $stmt->insert_id;
 $stmt->close();
+
+// Save per-question answers
+if ($examResultId && !empty($details)) {
+    $answerStmt = $conn->prepare("INSERT INTO exam_answers (exam_result_id, question_id, selected_option, is_correct, marks_obtained) VALUES (?, ?, ?, ?, ?)");
+    foreach ($details as $d) {
+        $qid = $d['question_id'];
+        $selected = $d['selected'];
+        $isCorrect = $d['is_correct'] ? 1 : 0;
+        $marksObtained = $d['marks_obtained'];
+        $answerStmt->bind_param('iisii', $examResultId, $qid, $selected, $isCorrect, $marksObtained);
+        $answerStmt->execute();
+    }
+    $answerStmt->close();
+}
 
 echo json_encode([
     'status' => 'success',
+    'exam_result_id' => $examResultId,
     'score' => $score,
     'total_marks' => $totalMarks,
     'percentage' => round($percentage, 2),
