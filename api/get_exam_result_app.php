@@ -76,52 +76,46 @@ try {
 
     $examId = $examResult['exam_id'];
 
-    // Fetch questions with correct answers (for review, all correct answers are exposed)
+    // Fetch questions with user answers via LEFT JOIN
+    // This ensures ALL questions are returned, even those the user didn't answer
     $questionsStmt = $conn->prepare("
-        SELECT id, question_text, option_a, option_b, option_c, option_d, 
-               correct_answer, marks, explanation
-        FROM questions 
-        WHERE exam_id = ?
-        ORDER BY id ASC
+        SELECT q.id, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, 
+               q.correct_answer, q.marks, q.explanation,
+               ea.selected_option, ea.is_correct, ea.marks_obtained
+        FROM questions q
+        LEFT JOIN exam_answers ea ON ea.question_id = q.id AND ea.exam_result_id = ?
+        WHERE q.exam_id = ?
+        ORDER BY q.id ASC
     ");
-    $questionsStmt->bind_param('i', $examId);
+    $questionsStmt->bind_param('ii', $examResultId, $examId);
     $questionsStmt->execute();
-    $questions = $questionsStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $rows = $questionsStmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $questionsStmt->close();
 
-    // Fetch user answers for this result
-    $answersStmt = $conn->prepare("
-        SELECT question_id, selected_option, is_correct, marks_obtained
-        FROM exam_answers
-        WHERE exam_result_id = ?
-    ");
-    $answersStmt->bind_param('i', $examResultId);
-    $answersStmt->execute();
-    $userAnswers = $answersStmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    $answersStmt->close();
+    // Build questions array and details array from the joined result
+    $questions = [];
+    $details = [];
 
-    // Build details map
-    $detailsMap = [];
-    foreach ($userAnswers as $ans) {
-        $detailsMap[] = [
-            'question_id' => intval($ans['question_id']),
-            'selected' => $ans['selected_option'],
-            'correct' => '', // will be filled from questions
-            'is_correct' => (bool)$ans['is_correct'],
-            'marks_obtained' => intval($ans['marks_obtained'])
+    foreach ($rows as $row) {
+        $questions[] = [
+            'id' => intval($row['id']),
+            'question_text' => $row['question_text'],
+            'option_a' => $row['option_a'],
+            'option_b' => $row['option_b'],
+            'option_c' => $row['option_c'],
+            'option_d' => $row['option_d'],
+            'correct_answer' => $row['correct_answer'],
+            'marks' => intval($row['marks']),
+            'explanation' => $row['explanation']
         ];
-    }
 
-    // Fill correct answers into details from questions
-    $questionMap = [];
-    foreach ($questions as $q) {
-        $questionMap[$q['id']] = $q['correct_answer'];
-    }
-    for ($i = 0; $i < count($detailsMap); $i++) {
-        $qid = $detailsMap[$i]['question_id'];
-        if (isset($questionMap[$qid])) {
-            $detailsMap[$i]['correct'] = $questionMap[$qid];
-        }
+        $details[] = [
+            'question_id' => intval($row['id']),
+            'selected' => $row['selected_option'] ?? '',
+            'correct' => $row['correct_answer'],
+            'is_correct' => $row['selected_option'] !== null ? (bool)$row['is_correct'] : false,
+            'marks_obtained' => $row['selected_option'] !== null ? intval($row['marks_obtained']) : 0
+        ];
     }
 
     echo json_encode([
@@ -133,7 +127,7 @@ try {
         'exam_status' => $examResult['status'],
         'completed_at' => $examResult['completed_at'],
         'questions' => $questions,
-        'details' => $detailsMap,
+        'details' => $details,
         'access' => 'unlimited'
     ], JSON_UNESCAPED_UNICODE);
 
