@@ -12,12 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $c = sanitize($_POST['option_c']); $d = sanitize($_POST['option_d']);
             $correct = $_POST['correct_answer']; $marks = intval($_POST['marks']);
             if ($action === 'add_question') {
-                $stmt = $mysqli->prepare("INSERT INTO questions (exam_id,question_text,option_a,option_b,option_c,option_d,correct_answer,marks) VALUES (?,?,?,?,?,?,?,?)");
-                $stmt->bind_param('issssssi', $examId, $qtext, $a, $b, $c, $d, $correct, $marks);
+                $explanation = sanitize($_POST['explanation'] ?? '');
+                $stmt = $mysqli->prepare("INSERT INTO questions (exam_id,question_text,option_a,option_b,option_c,option_d,correct_answer,marks,explanation) VALUES (?,?,?,?,?,?,?,?,?)");
+                $stmt->bind_param('issssssis', $examId, $qtext, $a, $b, $c, $d, $correct, $marks, $explanation);
             } else {
                 $qid = intval($_POST['question_id']);
-                $stmt = $mysqli->prepare("UPDATE questions SET exam_id=?,question_text=?,option_a=?,option_b=?,option_c=?,option_d=?,correct_answer=?,marks=? WHERE id=?");
-                $stmt->bind_param('issssssii', $examId, $qtext, $a, $b, $c, $d, $correct, $marks, $qid);
+                $explanation = sanitize($_POST['explanation'] ?? '');
+                $stmt = $mysqli->prepare("UPDATE questions SET exam_id=?,question_text=?,option_a=?,option_b=?,option_c=?,option_d=?,correct_answer=?,marks=?,explanation=? WHERE id=?");
+                $stmt->bind_param('issssssisi', $examId, $qtext, $a, $b, $c, $d, $correct, $marks, $explanation, $qid);
             }
             $stmt->execute(); $stmt->close();
             $success = $action==='add_question'?'Question added successfully.':'Question updated successfully.';
@@ -37,13 +39,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } elseif ($ext === 'csv') {
                         if (($handle = fopen($file['tmp_name'], "r")) !== FALSE) {
                             $header = fgetcsv($handle, 1000, ",");
-                            // Required columns: question_text, option_a, option_b, option_c, option_d, correct_answer, marks
+                            // Required columns: question_text, option_a, option_b, option_c, option_d, correct_answer, marks [, explanation]
                             while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
                                 if (count($row) >= 7) {
-                                    $data[] = [
+                                    $entry = [
                                         'question_text' => $row[0], 'option_a' => $row[1], 'option_b' => $row[2],
                                         'option_c' => $row[3], 'option_d' => $row[4], 'correct_answer' => $row[5], 'marks' => $row[6]
                                     ];
+                                    if (isset($row[7])) {
+                                        $entry['explanation'] = $row[7];
+                                    }
+                                    $data[] = $entry;
                                 }
                             }
                             fclose($handle);
@@ -54,12 +60,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $inserted = 0;
                         $mysqli->begin_transaction();
                         try {
-                            $stmt = $mysqli->prepare("INSERT INTO questions (exam_id, question_text, option_a, option_b, option_c, option_d, correct_answer, marks) VALUES (?,?,?,?,?,?,?,?)");
+                            $stmt = $mysqli->prepare("INSERT INTO questions (exam_id, question_text, option_a, option_b, option_c, option_d, correct_answer, marks, explanation) VALUES (?,?,?,?,?,?,?,?,?)");
                             foreach ($data as $q) {
                                 $qt = $q['question_text']; $oa = $q['option_a']; $ob = $q['option_b'];
                                 $oc = $q['option_c']; $od = $q['option_d']; $ca = strtolower($q['correct_answer']);
                                 $mk = intval($q['marks'] ?? 1);
-                                $stmt->bind_param('issssssi', $examId, $qt, $oa, $ob, $oc, $od, $ca, $mk);
+                                $exp = $q['explanation'] ?? '';
+                                $stmt->bind_param('issssssis', $examId, $qt, $oa, $ob, $oc, $od, $ca, $mk, $exp);
                                 $stmt->execute();
                                 $inserted++;
                             }
@@ -274,6 +281,12 @@ $selectedExamTitle = $examFilter ? $mysqli->query("SELECT title FROM exams WHERE
                             </div>
                             <?php endforeach; ?>
                         </div>
+                        <?php if (!empty($q['explanation'])): ?>
+                        <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                            <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1"><i class="fa-solid fa-lightbulb mr-1"></i>Explanation</p>
+                            <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words"><?php echo sanitizeOutput($q['explanation'], true); ?></p>
+                        </div>
+                        <?php endif; ?>
                     </div>
                     <?php endwhile; ?>
                 <?php else: ?>
@@ -359,6 +372,10 @@ $selectedExamTitle = $examFilter ? $mysqli->query("SELECT title FROM exams WHERE
                         <option value="a">A</option><option value="b">B</option><option value="c">C</option><option value="d">D</option>
                     </select>
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Explanation <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <textarea name="explanation" id="qExplanation" rows="2" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none input-enhanced" placeholder="Explain why this is the correct answer..."></textarea>
+                </div>
                 <div class="modal-actions">
                     <button type="button" onclick="closeQuestionModal()" class="btn-cancel">Cancel</button>
                     <button type="submit" class="btn-save">Save</button>
@@ -403,12 +420,12 @@ $selectedExamTitle = $examFilter ? $mysqli->query("SELECT title FROM exams WHERE
                         <div class="space-y-2">
                             <p class="text-[11px] font-bold text-gray-600 dark:text-gray-400 uppercase">CSV Format (No Header)</p>
                             <code class="block p-2 bg-white dark:bg-gray-800 text-[10px] rounded border border-gray-100 dark:border-gray-700 overflow-x-auto whitespace-nowrap">
-                                question, opt_a, opt_b, opt_c, opt_d, answer(a/b/c/d), marks
+                                question, opt_a, opt_b, opt_c, opt_d, answer(a/b/c/d), marks [, explanation]
                             </code>
                         </div>
                         <div class="space-y-2">
                             <p class="text-[11px] font-bold text-gray-600 dark:text-gray-400 uppercase">JSON Format</p>
-                            <pre class="p-2 bg-white dark:bg-gray-800 text-[10px] rounded border border-gray-100 dark:border-gray-700 overflow-x-auto">[{"question_text":"...","option_a":"...","option_b":"...","option_c":"...","option_d":"...","correct_answer":"a","marks":1}]</pre>
+                            <pre class="p-2 bg-white dark:bg-gray-800 text-[10px] rounded border border-gray-100 dark:border-gray-700 overflow-x-auto">[{"question_text":"...","option_a":"...","option_b":"...","option_c":"...","option_d":"...","correct_answer":"a","marks":1,"explanation":"..."}]</pre>
                         </div>
                     </div>
                 </div>
@@ -486,6 +503,7 @@ function openQuestionModal(q=null) {
         document.getElementById('qOptD').value=q.option_d;
         document.getElementById('qCorrect').value=q.correct_answer.toLowerCase();
         document.getElementById('qMarks').value=q.marks;
+        document.getElementById('qExplanation').value=q.explanation||'';
     } else {
         document.getElementById('qModalTitle').textContent='Add Question';
         document.getElementById('qAction').value='add_question';
