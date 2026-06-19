@@ -34,7 +34,7 @@ if ($txn) {
     if ($status === 'pending' || $status === 'initiated') {
         if (!empty($ppId)) {
             // Call verify API to check latest status
-            $ch = curl_init(PIPRAPAY_BASE_URL . '/api/verify-payments');
+            $ch = curl_init(PIPRAPAY_BASE_URL . '/verify-payment');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['pp_id' => $ppId]));
@@ -42,6 +42,8 @@ if ($txn) {
                 'mh-piprapay-api-key: ' . PIPRAPAY_API_KEY,
                 'Content-Type: application/json'
             ]);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

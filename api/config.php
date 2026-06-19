@@ -42,7 +42,7 @@ ini_set('display_errors', 1);
 // =======================
 // PIPRAPAY GATEWAY CONFIG
 // =======================
-define('PIPRAPAY_API_KEY', 'MHS-PIPRAPAY-API-KEY'); // Replace with actual API key
-define('PIPRAPAY_BASE_URL', 'https://sandbox.piprapay.com');
+define('PIPRAPAY_API_KEY', 'ea18a5d7d756b79697c1f46ce3f7986c5378508eb49e41dd0a');
+define('PIPRAPAY_BASE_URL', 'https://pay.robicodes.xyz/api');
 
 

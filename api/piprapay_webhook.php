@@ -45,7 +45,7 @@ if ($txn && $txn['status'] === 'completed') {
 }
 
 // 3. Query PipraPay API verify-payments to fetch official payment status (highly secure)
-$ch = curl_init(PIPRAPAY_BASE_URL . '/api/verify-payments');
+$ch = curl_init(PIPRAPAY_BASE_URL . '/verify-payment');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['pp_id' => $ppId]));
@@ -53,6 +53,8 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'mh-piprapay-api-key: ' . PIPRAPAY_API_KEY,
     'Content-Type: application/json'
 ]);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
 $response = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

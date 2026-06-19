@@ -149,10 +149,11 @@ $payload = [
     ]),
     'success_url' => $redirectVerifyUrl,
     'fail_url' => $redirectVerifyUrl,
-    'cancel_url' => $redirectVerifyUrl
+    'cancel_url' => $redirectVerifyUrl,
+    'webhook_url' => $protocol . '://' . $host . '/api/piprapay_webhook.php'
 ];
 
-$ch = curl_init(PIPRAPAY_BASE_URL . '/api/checkout/redirect');
+$ch = curl_init(PIPRAPAY_BASE_URL . '/checkout/redirect');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
@@ -160,9 +161,12 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'mh-piprapay-api-key: ' . PIPRAPAY_API_KEY,
     'Content-Type: application/json'
 ]);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
 $response = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlError = curl_error($ch);
 curl_close($ch);
 
 if ($httpCode !== 200 || !$response) {
@@ -176,13 +180,15 @@ if ($httpCode !== 200 || !$response) {
     echo json_encode([
         'status' => 'error',
         'message' => 'Failed to initialize payment with PipraPay',
-        'debug' => $response
+        'http_code' => $httpCode,
+        'debug' => $response,
+        'curl_error' => $curlError
     ]);
     exit;
 }
 
 $resData = json_decode($response, true);
-if (isset($resData['status']) && $resData['status'] === 'success' && !empty($resData['address'])) {
+if (isset($resData['status']) && $resData['status'] === 'success' && !empty($resData['pp_url'] ?? $resData['address'] ?? '')) {
     $ppId = $resData['pp_id'] ?? '';
     // Update local transaction with PipraPay reference ID and set status to pending
     $pendingStatus = 'pending';
@@ -195,7 +201,7 @@ if (isset($resData['status']) && $resData['status'] === 'success' && !empty($res
     echo json_encode([
         'status' => 'success',
         'transaction_id' => $transactionId,
-        'checkout_url' => $resData['address']
+        'checkout_url' => $resData['pp_url'] ?? $resData['address']
     ]);
 } else {
     echo json_encode([
