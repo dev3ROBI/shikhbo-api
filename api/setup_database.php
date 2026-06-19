@@ -274,12 +274,35 @@ $tables = [
         enrolled_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         completed_at DATETIME DEFAULT NULL,
         progress DECIMAL(5,2) DEFAULT 0.00,
-        status ENUM('active','completed','dropped') DEFAULT 'active',
+        status ENUM('active','completed','dropped','pending_payment') DEFAULT 'active',
         UNIQUE KEY unique_enrollment (user_id, course_id),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
         INDEX idx_user (user_id),
         INDEX idx_course (course_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+    'transactions' => "CREATE TABLE IF NOT EXISTS transactions (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id INT UNSIGNED NOT NULL,
+        course_id INT UNSIGNED NOT NULL,
+        enrollment_id INT UNSIGNED DEFAULT NULL,
+        transaction_id VARCHAR(64) NOT NULL UNIQUE,
+        piprapay_pp_id VARCHAR(128) DEFAULT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        currency VARCHAR(10) DEFAULT 'BDT',
+        status ENUM('initiated','pending','completed','failed','refunded') DEFAULT 'initiated',
+        gateway_response JSON DEFAULT NULL,
+        initiated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        completed_at DATETIME DEFAULT NULL,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+        FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE SET NULL,
+        INDEX idx_user (user_id),
+        INDEX idx_course (course_id),
+        INDEX idx_status (status),
+        INDEX idx_txn_id (transaction_id),
+        INDEX idx_pp_id (piprapay_pp_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 ];
 
@@ -295,6 +318,20 @@ foreach ($tables as $name => $sql) {
         logAction('TABLE', $name, 'CREATE', 'info', "Table '$name' already exists");
     }
 }
+
+// Alter enrollments table status column to include pending_payment if not already present
+$checkEnrollStatus = $server->query("SHOW COLUMNS FROM enrollments LIKE 'status'");
+if ($checkEnrollStatus && $checkEnrollStatus->num_rows > 0) {
+    $row = $checkEnrollStatus->fetch_assoc();
+    if (strpos($row['Type'], 'pending_payment') === false) {
+        if ($server->query("ALTER TABLE enrollments MODIFY status ENUM('active','completed','dropped','pending_payment') DEFAULT 'active'")) {
+            logAction('COLUMN', 'enrollments.status', 'ALTER', 'success', "Status enum updated to include pending_payment");
+        } else {
+            logAction('COLUMN', 'enrollments.status', 'ALTER', 'error', $server->error);
+        }
+    }
+}
+
 
 // =======================
 // MIGRATIONS (COLUMNS)

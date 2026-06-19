@@ -242,22 +242,78 @@ CREATE TABLE IF NOT EXISTS exam_answers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
--- PREMIUM PURCHASES
--- Tracks all premium plan purchases (Google Play).
+-- COURSES
 -- ============================================================
-CREATE TABLE IF NOT EXISTS premium_purchases (
+CREATE TABLE IF NOT EXISTS courses (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    short_description VARCHAR(255) DEFAULT NULL,
+    description TEXT DEFAULT NULL,
+    cover_image VARCHAR(255) DEFAULT NULL,
+    price DECIMAL(10,2) DEFAULT 0.00,
+    is_free TINYINT(1) DEFAULT 1,
+    category_id INT UNSIGNED DEFAULT NULL,
+    parent_course_id INT UNSIGNED DEFAULT NULL,
+    course_type ENUM('academic','skill','other') DEFAULT 'skill',
+    difficulty ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
+    duration_hours INT DEFAULT 0,
+    total_enrolled INT DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
+    is_featured TINYINT(1) DEFAULT 0,
+    sort_order INT DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES exam_categories(id) ON DELETE SET NULL,
+    FOREIGN KEY (parent_course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    INDEX idx_category (category_id),
+    INDEX idx_active (is_active),
+    INDEX idx_featured (is_featured)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- ENROLLMENTS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS enrollments (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL,
-    product_id VARCHAR(64) NOT NULL,
-    purchase_token VARCHAR(512) NOT NULL,
-    order_id VARCHAR(128) DEFAULT NULL,
-    purchase_time DATETIME DEFAULT NULL,
-    expiry_date DATETIME DEFAULT NULL,
-    is_active TINYINT(1) DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    course_id INT UNSIGNED NOT NULL,
+    enrolled_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME DEFAULT NULL,
+    progress DECIMAL(5,2) DEFAULT 0.00,
+    status ENUM('active','completed','dropped','pending_payment') DEFAULT 'active',
+    UNIQUE KEY unique_enrollment (user_id, course_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
     INDEX idx_user (user_id),
-    INDEX idx_active (is_active)
+    INDEX idx_course (course_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- TRANSACTIONS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS transactions (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    course_id INT UNSIGNED NOT NULL,
+    enrollment_id INT UNSIGNED DEFAULT NULL,
+    transaction_id VARCHAR(64) NOT NULL UNIQUE,
+    piprapay_pp_id VARCHAR(128) DEFAULT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    currency VARCHAR(10) DEFAULT 'BDT',
+    status ENUM('initiated','pending','completed','failed','refunded') DEFAULT 'initiated',
+    gateway_response JSON DEFAULT NULL,
+    initiated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME DEFAULT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE SET NULL,
+    INDEX idx_user (user_id),
+    INDEX idx_course (course_id),
+    INDEX idx_status (status),
+    INDEX idx_txn_id (transaction_id),
+    INDEX idx_pp_id (piprapay_pp_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
@@ -274,6 +330,7 @@ SELECT * FROM (
     SELECT 'General', 'general', NULL, 1, 'general', 'fa-book'
 ) AS tmp
 WHERE NOT EXISTS (SELECT 1 FROM exam_categories WHERE parent_id IS NULL LIMIT 1);
+
 
 -- Note: The default admin account is created automatically by
 -- running api/setup_database.php (password: Admin@123#Secure).

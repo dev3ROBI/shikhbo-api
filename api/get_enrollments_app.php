@@ -65,10 +65,12 @@ $sql = "SELECT e.id AS enrollment_id, e.enrolled_at, e.progress, e.status AS enr
                c.id AS course_id, c.title, c.slug, c.short_description, c.cover_image,
                c.price, c.is_free, c.difficulty, c.duration_hours, c.total_enrolled, c.category_id,
                cat.name AS category_name,
-               (SELECT COUNT(*) FROM exams ex WHERE ex.course_id = c.id AND ex.status = 'active') AS direct_exam_count
+               (SELECT COUNT(*) FROM exams ex WHERE ex.course_id = c.id AND ex.status = 'active') AS direct_exam_count,
+               t.transaction_id AS pending_transaction_id
         FROM enrollments e
         JOIN courses c ON e.course_id = c.id
         LEFT JOIN exam_categories cat ON c.category_id = cat.id
+        LEFT JOIN transactions t ON t.id = (SELECT MAX(id) FROM transactions WHERE enrollment_id = e.id)
         WHERE e.user_id = ? $statusFilter
         ORDER BY e.enrolled_at DESC";
 
@@ -89,6 +91,7 @@ while ($row = $result->fetch_assoc()) {
         'enrolled_at' => $row['enrolled_at'],
         'progress' => (float)$row['progress'],
         'enrollment_status' => $row['enrollment_status'],
+        'pending_transaction_id' => $row['pending_transaction_id'],
         'course' => [
             'id' => (int)$row['course_id'],
             'title' => $row['title'],

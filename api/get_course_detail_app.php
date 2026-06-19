@@ -107,12 +107,32 @@ while ($row = $examsResult->fetch_assoc()) {
 $examStmt->close();
 
 $isEnrolled = false;
+$enrollmentStatus = null;
+$pendingTransactionId = null;
+
 if ($uid) {
-    $enrollCheck = $conn->prepare("SELECT id FROM enrollments WHERE user_id = ? AND course_id = ? AND status = 'active'");
+    $enrollCheck = $conn->prepare("SELECT status, id FROM enrollments WHERE user_id = ? AND course_id = ?");
     $enrollCheck->bind_param('ii', $uid, $courseId);
     $enrollCheck->execute();
-    $isEnrolled = $enrollCheck->get_result()->num_rows > 0;
+    $enrollData = $enrollCheck->get_result()->fetch_assoc();
     $enrollCheck->close();
+
+    if ($enrollData) {
+        $enrollmentStatus = $enrollData['status'];
+        if ($enrollmentStatus === 'active') {
+            $isEnrolled = true;
+        } elseif ($enrollmentStatus === 'pending_payment') {
+            // Find the most recent transaction ID for this enrollment
+            $txnQuery = $conn->prepare("SELECT transaction_id FROM transactions WHERE enrollment_id = ? ORDER BY id DESC LIMIT 1");
+            $txnQuery->bind_param('i', $enrollData['id']);
+            $txnQuery->execute();
+            $txnResult = $txnQuery->get_result()->fetch_assoc();
+            $txnQuery->close();
+            if ($txnResult) {
+                $pendingTransactionId = $txnResult['transaction_id'];
+            }
+        }
+    }
 }
 
 echo json_encode([
@@ -138,5 +158,7 @@ echo json_encode([
     ],
     'exams' => $exams,
     'is_enrolled' => $isEnrolled,
+    'enrollment_status' => $enrollmentStatus,
+    'pending_transaction_id' => $pendingTransactionId,
     'access' => 'unlimited'
 ]);

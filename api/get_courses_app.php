@@ -92,21 +92,21 @@ foreach ($catRows as $id => $data) {
 
 $sql = "SELECT c.id, c.title, c.slug, c.short_description, c.cover_image, c.price, c.is_free,
                c.difficulty, c.duration_hours, c.total_enrolled, c.is_featured, c.created_at,
-               c.category_id,
+               c.category_id, e.status AS enrollment_status,
                cat.name AS category_name, cat.slug AS category_slug,
                (SELECT COUNT(*) FROM exams e WHERE e.course_id = c.id AND e.status = 'active') AS direct_exam_count
         FROM courses c
         LEFT JOIN exam_categories cat ON c.category_id = cat.id
+        LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = ?
         WHERE $whereClause
         ORDER BY c.is_featured DESC, c.total_enrolled DESC, c.created_at DESC
         LIMIT ? OFFSET ?";
 
-$params[] = $perPage;
-$params[] = $offset;
-$types .= "ii";
+$allParams = array_merge([intval($uid)], $params, [$perPage, $offset]);
+$allTypes = "i" . $types . "ii";
 
 $stmt = $conn->prepare($sql);
-$stmt->bind_param($types, ...$params);
+$stmt->bind_param($allTypes, ...$allParams);
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -133,6 +133,7 @@ while ($row = $result->fetch_assoc()) {
         'exam_count' => $examCount,
         'category_name' => $row['category_name'],
         'category_slug' => $row['category_slug'],
+        'enrollment_status' => $row['enrollment_status'] ?? null,
         'created_at' => $row['created_at']
     ];
 }

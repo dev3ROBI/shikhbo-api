@@ -63,6 +63,21 @@ if ($action === 'enroll') {
     $enrollment = $existing->get_result()->fetch_assoc();
     $existing->close();
 
+    if ($course['is_free'] == 0) {
+        if ($enrollment && $enrollment['status'] === 'active') {
+            echo json_encode(['status' => 'success', 'message' => 'Already enrolled', 'is_enrolled' => true]);
+            exit;
+        }
+        // Paid course requires payment flow
+        echo json_encode([
+            'status' => 'payment_required',
+            'message' => 'Payment required for this course',
+            'course_id' => $courseId,
+            'is_enrolled' => false
+        ]);
+        exit;
+    }
+
     if ($enrollment) {
         if ($enrollment['status'] === 'active') {
             echo json_encode(['status' => 'success', 'message' => 'Already enrolled', 'is_enrolled' => true]);

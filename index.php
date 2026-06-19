@@ -19,13 +19,13 @@ $page = $_GET['page'] ?? '';
 $adminPages = [
     'dashboard', 'students', 'admins', 'settings', 'exams',
     'questions', 'results', 'categories', 'database',
-    'exam_attempt', 'app_control', 'courses'
+    'exam_attempt', 'app_control', 'courses', 'transactions'
 ];
 
 // Role-based page permissions
 $rolePages = [
-    'Administrator' => ['dashboard','students','admins','settings','exams','questions','results','categories','database','exam_attempt','app_control','courses'],
-    'Moderator'     => ['dashboard','exams','questions','categories','exam_attempt','results','courses'],
+    'Administrator' => ['dashboard','students','admins','settings','exams','questions','results','categories','database','exam_attempt','app_control','courses','transactions'],
+    'Moderator'     => ['dashboard','exams','questions','categories','exam_attempt','results','courses','transactions'],
     'Editor'        => ['dashboard','categories','questions','exam_attempt','courses'],
 ];
 
@@ -63,7 +63,7 @@ if ($page && in_array($page, $adminPages)) {
 
     $pageFile = __DIR__ . '/pages/' . $page . '.php';
     if (!file_exists($pageFile)) { $page = 'dashboard'; $pageFile = __DIR__ . '/pages/dashboard.php'; }
-    $pageTitles = ['dashboard'=>'Admin Dashboard','students'=>'Students Management','admins'=>'Admin Management','settings'=>'System Settings','exams'=>'Exams Management','questions'=>'Question Bank','results'=>'Exam Results','categories'=>'Exam Categories','database'=>'Database Console','exam_attempt'=>'Exam Attempt','app_control'=>'App Control','courses'=>'Courses Management'];
+    $pageTitles = ['dashboard'=>'Admin Dashboard','students'=>'Students Management','admins'=>'Admin Management','settings'=>'System Settings','exams'=>'Exams Management','questions'=>'Question Bank','results'=>'Exam Results','categories'=>'Exam Categories','database'=>'Database Console','exam_attempt'=>'Exam Attempt','app_control'=>'App Control','courses'=>'Courses Management','transactions'=>'Transactions Management'];
     $pageTitle = $pageTitles[$page] ?? 'Admin Panel';
 
     $navItems = [
@@ -75,6 +75,7 @@ if ($page && in_array($page, $adminPages)) {
         ['exam_attempt', 'fa-play',          'Exam Attempt'],
         ['students',     'fa-users',         'Students'],
         ['results',      'fa-chart-bar',     'Results'],
+        ['transactions', 'fa-receipt',       'Transactions'],
         ['admins',       'fa-user-gear',     'Admins'],
         ['app_control',  'fa-mobile-screen', 'App Control'],
         ['database',     'fa-terminal',      'Database'],

@@ -333,6 +333,9 @@ $isMemberUser = $loggedInUser && !$isAdminUser;
             <a href="#home" class="mobile-nav-link flex items-center px-3 py-2.5 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors text-sm">
                 <i class="fa-solid fa-house w-6 text-blue-500 text-xs"></i> Home
             </a>
+            <a href="#courses" class="mobile-nav-link flex items-center px-3 py-2.5 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors text-sm">
+                <i class="fa-solid fa-graduation-cap w-6 text-blue-500 text-xs"></i> Courses
+            </a>
             <a href="#features" class="mobile-nav-link flex items-center px-3 py-2.5 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-medium transition-colors text-sm">
                 <i class="fa-solid fa-star w-6 text-blue-500 text-xs"></i> Features
             </a>
@@ -378,6 +381,7 @@ $isMemberUser = $loggedInUser && !$isAdminUser;
                 </a>
                 <div class="hidden md:flex items-center hero-fade-in delay-1">
                     <a href="#home" class="nav-link">Home</a>
+                    <a href="#courses" class="nav-link">Courses</a>
                     <a href="#features" class="nav-link">Features</a>
                     <?php if ($isAdminUser): ?>
                     <a href="/index.php?page=dashboard" class="nav-link">Dashboard</a>
@@ -454,6 +458,95 @@ $isMemberUser = $loggedInUser && !$isAdminUser;
             </div>
         </div>
     </section>
+
+    <!-- Courses Section -->
+    <section id="courses" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 scroll-section">
+        <div class="text-center mb-12 anim-fade-up">
+            <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-3">Explore Our Courses</h2>
+            <p class="text-base text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">Enhance your knowledge with our premium courses designed by expert instructors.</p>
+        </div>
+
+        <?php
+        $conn = getDBConnection();
+        $userId = $loggedInUser ? intval($loggedInUser['id']) : 0;
+        $coursesQuery = "
+            SELECT c.*, cat.name AS category_name,
+                   e.status AS enrollment_status,
+                   t.transaction_id AS pending_transaction_id
+            FROM courses c
+            LEFT JOIN exam_categories cat ON c.category_id = cat.id
+            LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $userId
+            LEFT JOIN transactions t ON t.id = (SELECT MAX(id) FROM transactions WHERE enrollment_id = e.id)
+            WHERE c.is_active = 1 AND c.parent_course_id IS NULL
+            ORDER BY c.is_featured DESC, c.total_enrolled DESC
+        ";
+        $coursesResult = $conn->query($coursesQuery);
+        $landingCourses = [];
+        if ($coursesResult) {
+            while ($r = $coursesResult->fetch_assoc()) {
+                $landingCourses[] = $r;
+            }
+        }
+        ?>
+
+        <?php if (empty($landingCourses)): ?>
+            <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                <i class="fa-solid fa-graduation-cap text-4xl mb-3"></i>
+                <p>No courses available at the moment. Check back soon!</p>
+            </div>
+        <?php else: ?>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                <?php foreach ($landingCourses as $course): 
+                    $isEnrolled = ($course['enrollment_status'] === 'active');
+                    $isPending = ($course['enrollment_status'] === 'pending_payment');
+                    $isFree = intval($course['is_free']);
+                    $price = floatval($course['price']);
+                    $coverImage = $course['cover_image'] ?: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=60';
+                ?>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 flex flex-col h-full transform hover:-translate-y-1">
+                    <div class="relative h-48 overflow-hidden bg-gray-100">
+                        <img src="<?php echo htmlspecialchars($coverImage); ?>" alt="<?php echo htmlspecialchars($course['title']); ?>" class="w-full h-full object-cover">
+                        <div class="absolute top-4 right-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur px-3 py-1.5 rounded-xl font-bold text-sm shadow-md <?php echo $isFree ? 'text-green-600' : 'text-indigo-600'; ?>">
+                            <?php echo $isFree ? 'FREE' : '৳' . number_format($price, 0); ?>
+                        </div>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold tracking-wider text-blue-600 uppercase mb-2 block"><?php echo htmlspecialchars($course['category_name'] ?: 'General'); ?></span>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 line-clamp-1"><?php echo htmlspecialchars($course['title']); ?></h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2"><?php echo htmlspecialchars($course['short_description']); ?></p>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between text-xs text-gray-400 mb-4 border-t border-gray-100 dark:border-gray-700 pt-4">
+                                <span><i class="fa-solid fa-user-group mr-1.5 text-blue-500"></i><?php echo number_format($course['total_enrolled']); ?> Enrolled</span>
+                                <span><i class="fa-solid fa-clock mr-1.5 text-blue-500"></i><?php echo $course['duration_hours'] ?: 'Self-paced'; ?> hrs</span>
+                            </div>
+                            
+                            <?php if (!$loggedInUser): ?>
+                                <a href="/pages/admin_login.php?redirect=index.php" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-100 dark:shadow-none">
+                                    <i class="fa-solid fa-lock"></i> Login to Enroll
+                                </a>
+                            <?php elseif ($isEnrolled): ?>
+                                <button class="w-full py-3 px-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm cursor-default" disabled>
+                                    <i class="fa-solid fa-circle-check"></i> Already Enrolled
+                                </button>
+                            <?php elseif ($isPending): ?>
+                                <button onclick="checkoutCourse(<?php echo $course['id']; ?>)" class="w-full py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-amber-100 dark:shadow-none">
+                                    <i class="fa-solid fa-wallet"></i> Complete Payment
+                                </button>
+                            <?php else: ?>
+                                <button onclick="enrollCourse(<?php echo $course['id']; ?>, <?php echo $isFree; ?>)" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-100 dark:shadow-none">
+                                    <i class="fa-solid fa-graduation-cap"></i> <?php echo $isFree ? 'Enroll Now' : 'Buy Course'; ?>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </section>
+
 
     <!-- Features -->
     <section id="features" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 scroll-section">
@@ -865,6 +958,94 @@ function closeLogoutModal() {
     m.classList.remove('open');
     document.body.style.overflow = '';
 }
+// Toast Alert System for Landing Page
+function showToast(title, message, type = 'success') {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'fixed bottom-4 right-4 z-[100] flex flex-col-reverse space-y-reverse space-y-2';
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    const colorClass = type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white';
+    const iconClass = type === 'success' ? 'fa-circle-check' : 'fa-circle-xmark';
+    
+    toast.className = `${colorClass} px-5 py-3.5 rounded-xl shadow-lg flex items-center gap-3 text-sm font-semibold transition-all duration-300 transform translate-y-4 opacity-0`;
+    toast.innerHTML = `<i class="fa-solid ${iconClass} text-lg"></i> <div><span class="block font-bold">${title}</span><span class="text-xs opacity-90">${message}</span></div>`;
+    
+    container.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+    }, 10);
+    
+    // Auto dismiss
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+function enrollCourse(courseId, isFree) {
+    if (isFree) {
+        showToast('Enrolling', 'Please wait...', 'success');
+        fetch('/api/enroll_course_app.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                action: 'enroll',
+                uid: <?php echo $userId ? $userId : 0; ?>,
+                season: 'web',
+                u_state: '1'
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast('Success', 'Enrolled successfully! Ready to start.', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showToast('Error', data.message || 'Enrollment failed', 'error');
+            }
+        })
+        .catch(err => {
+            showToast('Error', 'An error occurred during enrollment', 'error');
+        });
+    } else {
+        checkoutCourse(courseId);
+    }
+}
+
+function checkoutCourse(courseId) {
+    showToast('Redirecting', 'Preparing payment gateway...', 'success');
+    fetch('/api/piprapay_initiate.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            course_id: courseId
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success' && data.checkout_url) {
+            window.location.href = data.checkout_url;
+        } else {
+            showToast('Error', data.message || 'Payment initiation failed', 'error');
+        }
+    })
+    .catch(err => {
+        showToast('Error', 'An error occurred starting payment checkout', 'error');
+    });
+}
+
 <?php if ($isMemberUser): ?>
 document.addEventListener('DOMContentLoaded', function() { setTimeout(openAccessDenied, 500); });
 <?php endif; ?>

@@ -39,4 +39,10 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization");
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-?>
+// =======================
+// PIPRAPAY GATEWAY CONFIG
+// =======================
+define('PIPRAPAY_API_KEY', 'MHS-PIPRAPAY-API-KEY'); // Replace with actual API key
+define('PIPRAPAY_BASE_URL', 'https://sandbox.piprapay.com');
+
+
