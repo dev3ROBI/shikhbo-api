@@ -301,33 +301,21 @@ if ($page && in_array($page, $adminPages)) {
     exit;
 }
 
-// === Landing Page ===
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shikhbo - Master Every Exam with Confidence</title>
-    <meta name="description" content="Practice with thousands of questions, track your progress, and ace your exams with Shikhbo.">
-    <link rel="icon" type="image/png" href="/image/app_logo.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-    tailwind.config = {
-        darkMode: 'class',
-        theme: {
-            extend: {
-                colors: {
-                    'shikhbo-primary': '#4F46E5',
-                    'shikhbo-dark': '#1E293B',
-                }
-            }
-        }
+// === Non-Admin Public Pages ===
+$publicPages = ['browse', 'orders'];
+$pageTitles = ['browse' => 'Course Catalog — Shikhbo', 'orders' => 'My Orders — Shikhbo'];
+if ($page && in_array($page, $publicPages)) {
+    $pageFile = __DIR__ . '/pages/' . $page . '.php';
+    if (file_exists($pageFile)) {
+        $pageTitle = $pageTitles[$page] ?? 'Shikhbo';
+        include __DIR__ . '/includes/public_header.php';
+        include $pageFile;
+        include __DIR__ . '/includes/public_footer.php';
+        exit;
     }
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-</head>
-<body class="bg-gray-50 dark:bg-gray-900 font-sans antialiased">
-    <?php include __DIR__ . '/pages/landing.php'; ?>
-</body>
-</html>
+}
+
+// === Landing Page ===
+include __DIR__ . '/includes/public_header.php';
+include __DIR__ . '/pages/landing.php';
+include __DIR__ . '/includes/public_footer.php';

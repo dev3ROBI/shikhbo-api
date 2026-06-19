@@ -1,9 +1,10 @@
 <?php
 /**
- * GET COURSES FOR APP
+ * GET COURSES FOR APP & WEB
  * Returns course list with cover image, pricing, enrollment count
- * GET params: category_id (optional), is_featured (optional), search (optional), page (optional)
+ * GET params: category_id (optional), is_featured (optional), search (optional), page (optional), enrolled (optional)
  */
+require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/app_security_validation.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -15,17 +16,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-$token = getBearerToken();
-$uid = $_GET['uid'] ?? null;
-$season = $_GET['season'] ?? null;
-$u_state = $_GET['u_state'] ?? null;
-$security = requireAppSecurity($uid, $season, $u_state);
-
-if ($token) {
-    $tokenVerify = verifyToken($token, $uid);
+$uid = null;
+if (isLoggedIn()) {
+    $user = getCurrentUser();
+    $uid = intval($user['id']);
+} else {
+    $uid = intval($_GET['uid'] ?? 0);
+    $season = $_GET['season'] ?? null;
+    $u_state = $_GET['u_state'] ?? null;
+    if ($uid > 0) {
+        $security = requireAppSecurity($uid, $season, $u_state);
+        $token = getBearerToken();
+        if ($token) {
+            $tokenVerify = verifyToken($token, $uid);
+        }
+    }
 }
 
-$conn = getAppSecurityConn();
+$conn = getDBConnection();
+$enrolledOnly = isset($_GET['enrolled']) && $_GET['enrolled'] == 1;
 
 $categoryId = isset($_GET['category_id']) ? intval($_GET['category_id']) : null;
 $isFeatured = isset($_GET['is_featured']) ? intval($_GET['is_featured']) : null;
@@ -37,6 +46,10 @@ $offset = ($page - 1) * $perPage;
 $where = ["c.is_active = 1", "c.parent_course_id IS NULL"];
 $params = [];
 $types = "";
+
+if ($enrolledOnly && $uid > 0) {
+    $where[] = "e.status = 'active'";
+}
 
 if ($categoryId) {
     $where[] = "c.category_id = ?";
@@ -56,7 +69,13 @@ if ($search) {
 
 $whereClause = implode(" AND ", $where);
 
-$countSql = "SELECT COUNT(*) as total FROM courses c WHERE $whereClause";
+$countFrom = "FROM courses c";
+if ($enrolledOnly && $uid > 0) {
+    $countFrom .= " JOIN enrollments e ON e.course_id = c.id AND e.user_id = $uid";
+} elseif ($uid > 0) {
+    $countFrom .= " LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $uid";
+}
+$countSql = "SELECT COUNT(*) as total $countFrom WHERE $whereClause";
 $countStmt = $conn->prepare($countSql);
 if (!empty($params)) {
     $countStmt->bind_param($types, ...$params);

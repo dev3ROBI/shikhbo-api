@@ -1,8 +1,9 @@
 <?php
 /**
- * ENROLL / UNENROLL COURSE FOR APP
+ * ENROLL / UNENROLL COURSE FOR APP & WEB
  * POST params: course_id, action (enroll or unenroll)
  */
+require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/app_security_validation.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -23,17 +24,32 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $input = json_decode(file_get_contents('php://input'), true);
 
-$uid = $input['uid'] ?? $_POST['uid'] ?? null;
-$season = $input['season'] ?? $_POST['season'] ?? null;
-$u_state = $input['u_state'] ?? $_POST['u_state'] ?? null;
-$security = requireAppSecurity($uid, $season, $u_state);
-
-$token = getBearerToken();
-if ($token) {
-    $tokenVerify = verifyToken($token, $uid);
+$uid = null;
+// Check web session first
+if (isLoggedIn()) {
+    $user = getCurrentUser();
+    $uid = intval($user['id']);
+} else {
+    // Fall back to app security validation
+    $uid = intval($input['uid'] ?? $_POST['uid'] ?? 0);
+    $season = $input['season'] ?? $_POST['season'] ?? null;
+    $u_state = $input['u_state'] ?? $_POST['u_state'] ?? null;
+    if ($uid > 0) {
+        $security = requireAppSecurity($uid, $season, $u_state);
+        $token = getBearerToken();
+        if ($token) {
+            $tokenVerify = verifyToken($token, $uid);
+        }
+    }
 }
 
-$conn = getAppSecurityConn();
+if (!$uid || $uid <= 0) {
+    http_response_code(401);
+    echo json_encode(['status' => 'error', 'message' => 'Authentication required']);
+    exit;
+}
+
+$conn = getDBConnection();
 
 $courseId = intval($input['course_id'] ?? $_POST['course_id'] ?? 0);
 $action = $input['action'] ?? $_POST['action'] ?? 'enroll';

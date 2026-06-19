@@ -1,133 +1,95 @@
 <?php
-require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/config.php';
 
-header('Content-Type: application/json; charset=utf-8');
+$rawInput = file_get_contents('php://input');
+$payload = json_decode($rawInput, true);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['status' => 'error', 'message' => 'Method not allowed']);
-    exit;
+file_put_contents(__DIR__ . '/webhook_debug.log', date('Y-m-d H:i:s') . ' — ' . $rawInput . PHP_EOL, FILE_APPEND);
+
+$ppId = $payload['pp_id'] ?? '';
+$status = strtolower($payload['status'] ?? '');
+$metadata = $payload['metadata'] ?? '';
+
+$orderRef = null;
+if ($metadata) {
+    $metaData = is_string($metadata) ? json_decode($metadata, true) : $metadata;
+    $orderRef = $metaData['order_id'] ?? null;
 }
 
-$receivedKey = $_SERVER['HTTP_MHS_PIPRAPAY_API_KEY'] ?? $_SERVER['HTTP_MH_PIPRAPAY_API_KEY'] ?? '';
-if (empty($receivedKey) || $receivedKey !== PIPRAPAY_API_KEY) {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized key']);
-    exit;
-}
-
-$input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-$ppId = $input['pp_id'] ?? null;
-
-if (empty($ppId)) {
-    http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => 'pp_id is required']);
-    exit;
-}
-
-$conn = getDBConnection();
-
-$txnCheck = $conn->prepare("SELECT id, status, enrollment_id, course_id FROM transactions WHERE piprapay_pp_id = ?");
-$txnCheck->bind_param('s', $ppId);
-$txnCheck->execute();
-$txn = $txnCheck->get_result()->fetch_assoc();
-$txnCheck->close();
-
-if ($txn && $txn['status'] === 'completed') {
-    echo json_encode(['status' => 'success', 'message' => 'Webhook already processed']);
-    exit;
-}
-
-$ch = curl_init(PIPRAPAY_BASE_URL . '/verify-payment');
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['pp_id' => $ppId]));
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'MHS-PIPRAPAY-API-KEY: ' . PIPRAPAY_API_KEY,
-    'Content-Type: application/json'
-]);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-
-if ($httpCode !== 200 || !$response) {
-    http_response_code(502);
-    echo json_encode(['status' => 'error', 'message' => 'Failed to reach PipraPay verify API']);
-    exit;
-}
-
-$resData = json_decode($response, true);
-$statusData = $resData;
-
-if (!$statusData || !isset($statusData['status'])) {
-    http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => 'Invalid verify response structure']);
-    exit;
-}
-
-$metadata = json_decode($statusData['metadata']['invoice_id'] ?? $statusData['metadata'] ?? '{}', true);
-$transactionId = $metadata['transaction_id'] ?? null;
-
-if (empty($transactionId)) {
-    if ($txn) {
-        $transactionId = $txn['id'];
-    } else {
-        http_response_code(404);
-        echo json_encode(['status' => 'error', 'message' => 'No transaction found matching metadata']);
+if (!$orderRef && $ppId) {
+    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+    if ($conn->connect_error) {
+        http_response_code(500);
         exit;
     }
+    $stmt = $conn->prepare("SELECT order_id FROM orders WHERE piprapay_pp_id = ? LIMIT 1");
+    $stmt->bind_param('s', $ppId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $orderRef = $row['order_id'] ?? null;
+    $conn->close();
 }
 
-$stmt = $conn->prepare("SELECT id, enrollment_id, course_id, status FROM transactions WHERE transaction_id = ?");
-$stmt->bind_param('s', $transactionId);
-$stmt->execute();
-$localTxn = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-if (!$localTxn) {
-    http_response_code(404);
-    echo json_encode(['status' => 'error', 'message' => 'Transaction not found locally']);
+if (!$orderRef) {
+    http_response_code(200);
+    echo 'OK';
     exit;
 }
 
-$paymentStatus = strtolower($statusData['status']);
-$enrollmentId = $localTxn['enrollment_id'];
-$courseId = $localTxn['course_id'];
-
-$conn->begin_transaction();
-
-try {
-    if ($paymentStatus === 'completed') {
-        $updateTxn = $conn->prepare("UPDATE transactions SET status = 'completed', piprapay_pp_id = ?, gateway_response = ?, completed_at = NOW() WHERE id = ?");
-        $gatewayJson = json_encode($resData);
-        $updateTxn->bind_param('ssi', $ppId, $gatewayJson, $localTxn['id']);
-        $updateTxn->execute();
-        $updateTxn->close();
-
-        $updateEnroll = $conn->prepare("UPDATE enrollments SET status = 'active', enrolled_at = NOW() WHERE id = ?");
-        $updateEnroll->bind_param('i', $enrollmentId);
-        $updateEnroll->execute();
-        $updateEnroll->close();
-
-        $conn->query("UPDATE courses SET total_enrolled = (SELECT COUNT(*) FROM enrollments WHERE course_id = $courseId AND status = 'active') WHERE id = $courseId");
-
-    } elseif ($paymentStatus === 'failed') {
-        $updateTxn = $conn->prepare("UPDATE transactions SET status = 'failed', piprapay_pp_id = ?, gateway_response = ? WHERE id = ?");
-        $gatewayJson = json_encode($resData);
-        $updateTxn->bind_param('ssi', $ppId, $gatewayJson, $localTxn['id']);
-        $updateTxn->execute();
-        $updateTxn->close();
-    }
-
-    $conn->commit();
-    echo json_encode(['status' => 'success', 'payment_status' => $paymentStatus]);
-
-} catch (Exception $e) {
-    $conn->rollback();
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
+if ($conn->connect_error) {
     http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Database transaction failed: ' . $e->getMessage()]);
+    exit;
 }
+
+$stmt = $conn->prepare("SELECT status FROM orders WHERE order_id = ?");
+$stmt->bind_param('s', $orderRef);
+$stmt->execute();
+$orderRow = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+if (!$orderRow || $orderRow['status'] === 'completed') {
+    $conn->close();
+    http_response_code(200);
+    echo 'OK';
+    exit;
+}
+
+if ($status === 'completed') {
+    $conn->begin_transaction();
+    try {
+        $stmt = $conn->prepare("UPDATE orders SET status='completed', piprapay_pp_id=?, gateway_response=?, paid_at=NOW() WHERE order_id=?");
+        $stmt->bind_param('sss', $ppId, $rawInput, $orderRef);
+        $stmt->execute();
+
+        $items = $conn->query("SELECT oi.*, cr.id AS cid FROM order_items oi JOIN courses cr ON oi.course_id=cr.id WHERE oi.order_ref='" . $conn->real_escape_string($orderRef) . "'");
+        while ($item = $items->fetch_assoc()) {
+            $eid = $item['enrollment_id'];
+            if ($eid) {
+                $stmt2 = $conn->prepare("UPDATE enrollments SET status='active', enrolled_at=NOW() WHERE id=?");
+                if ($stmt2) {
+                    $stmt2->bind_param('i', $eid);
+                    $stmt2->execute();
+                    $stmt2->close();
+                }
+            }
+            $conn->query("UPDATE courses SET total_enrolled=(SELECT COUNT(*) FROM enrollments WHERE course_id={$item['cid']} AND status='active') WHERE id={$item['cid']}");
+        }
+        $conn->commit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        file_put_contents(__DIR__ . '/webhook_debug.log', date('Y-m-d H:i:s') . ' — ERROR: ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
+    }
+} elseif ($status === 'failed' || $status === 'cancelled') {
+    $stmt3 = $conn->prepare("UPDATE orders SET status='cancelled', gateway_response=? WHERE order_id=?");
+    if ($stmt3) {
+        $stmt3->bind_param('ss', $rawInput, $orderRef);
+        $stmt3->execute();
+        $stmt3->close();
+    }
+}
+
+$conn->close();
+http_response_code(200);
+echo 'OK';
