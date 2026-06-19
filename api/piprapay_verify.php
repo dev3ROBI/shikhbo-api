@@ -1,7 +1,4 @@
 <?php
-/**
- * Verify payment status (both manual checks and customer redirect landings)
- */
 require_once __DIR__ . '/../includes/auth.php';
 
 $transactionId = $_GET['transaction_id'] ?? '';
@@ -18,7 +15,6 @@ $isSuccess = false;
 $courseTitle = 'Course';
 
 if ($txn) {
-    // Fetch course title
     $courseStmt = $conn->prepare("SELECT title FROM courses WHERE id = ?");
     $courseStmt->bind_param('i', $txn['course_id']);
     $courseStmt->execute();
@@ -31,65 +27,57 @@ if ($txn) {
     $ppId = $txn['piprapay_pp_id'];
     $status = $txn['status'];
 
-    if ($status === 'pending' || $status === 'initiated') {
-        if (!empty($ppId)) {
-            // Call verify API to check latest status
-            $ch = curl_init(PIPRAPAY_BASE_URL . '/verify-payment');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['pp_id' => $ppId]));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'mh-piprapay-api-key: ' . PIPRAPAY_API_KEY,
-                'Content-Type: application/json'
-            ]);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    if (($status === 'pending' || $status === 'initiated') && !empty($ppId)) {
+        $ch = curl_init(PIPRAPAY_BASE_URL . '/verify-payment');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['pp_id' => $ppId]));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'MHS-PIPRAPAY-API-KEY: ' . PIPRAPAY_API_KEY,
+            'Content-Type: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
 
-            if ($httpCode === 200 && $response) {
-                $resData = json_decode($response, true);
-                $statusData = $resData['data'] ?? null;
-                if ($statusData && isset($statusData['status'])) {
-                    $paymentStatus = strtolower($statusData['status']);
-                    $enrollmentId = $txn['enrollment_id'];
-                    $courseId = $txn['course_id'];
+        if ($httpCode === 200 && $response) {
+            $resData = json_decode($response, true);
+            $paymentStatus = strtolower($resData['status'] ?? '');
+            $enrollmentId = $txn['enrollment_id'];
+            $courseId = $txn['course_id'];
 
-                    if ($paymentStatus === 'completed') {
-                        $conn->begin_transaction();
-                        try {
-                            // Update transaction
-                            $updateTxn = $conn->prepare("UPDATE transactions SET status = 'completed', gateway_response = ?, completed_at = NOW() WHERE id = ?");
-                            $gatewayJson = json_encode($resData);
-                            $updateTxn->bind_param('si', $gatewayJson, $txn['id']);
-                            $updateTxn->execute();
-                            $updateTxn->close();
+            if ($paymentStatus === 'completed') {
+                $conn->begin_transaction();
+                try {
+                    $updateTxn = $conn->prepare("UPDATE transactions SET status = 'completed', gateway_response = ?, completed_at = NOW() WHERE id = ?");
+                    $gatewayJson = json_encode($resData);
+                    $updateTxn->bind_param('si', $gatewayJson, $txn['id']);
+                    $updateTxn->execute();
+                    $updateTxn->close();
 
-                            // Activate enrollment
-                            $updateEnroll = $conn->prepare("UPDATE enrollments SET status = 'active', enrolled_at = NOW() WHERE id = ?");
-                            $updateEnroll->bind_param('i', $enrollmentId);
-                            $updateEnroll->execute();
-                            $updateEnroll->close();
+                    $updateEnroll = $conn->prepare("UPDATE enrollments SET status = 'active', enrolled_at = NOW() WHERE id = ?");
+                    $updateEnroll->bind_param('i', $enrollmentId);
+                    $updateEnroll->execute();
+                    $updateEnroll->close();
 
-                            // Update Course enrollment counter
-                            $conn->query("UPDATE courses SET total_enrolled = (SELECT COUNT(*) FROM enrollments WHERE course_id = $courseId AND status = 'active') WHERE id = $courseId");
+                    $conn->query("UPDATE courses SET total_enrolled = (SELECT COUNT(*) FROM enrollments WHERE course_id = $courseId AND status = 'active') WHERE id = $courseId");
 
-                            $conn->commit();
-                            $status = 'completed';
-                        } catch (Exception $e) {
-                            $conn->rollback();
-                        }
-                    } elseif ($paymentStatus === 'failed') {
-                        $updateTxn = $conn->prepare("UPDATE transactions SET status = 'failed', gateway_response = ? WHERE id = ?");
-                        $gatewayJson = json_encode($resData);
-                        $updateTxn->bind_param('si', $gatewayJson, $txn['id']);
-                        $updateTxn->execute();
-                        $updateTxn->close();
-                        $status = 'failed';
-                    }
+                    $conn->commit();
+                    $status = 'completed';
+                } catch (Exception $e) {
+                    $conn->rollback();
                 }
+            } elseif ($paymentStatus === 'failed') {
+                $updateTxn = $conn->prepare("UPDATE transactions SET status = 'failed', gateway_response = ? WHERE id = ?");
+                $gatewayJson = json_encode($resData);
+                $updateTxn->bind_param('si', $gatewayJson, $txn['id']);
+                $updateTxn->execute();
+                $updateTxn->close();
+                $status = 'failed';
             }
         }
     }
@@ -106,7 +94,6 @@ if ($txn) {
     $message = "Transaction ID not found.";
 }
 
-// Check if request is JSON (e.g. from app check button)
 if (isset($_GET['format']) && $_GET['format'] === 'json') {
     header('Content-Type: application/json');
     echo json_encode([
