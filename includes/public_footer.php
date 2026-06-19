@@ -249,7 +249,7 @@ function showToast(title, message, type) {
     setTimeout(function() { toast.classList.add('opacity-0', 'translate-y-2'); setTimeout(function() { toast.remove(); }, 300); }, 4000);
 }
 
-var _uid = <?php echo $loggedInUser ? intval($loggedInUser['id']) : 0; ?>;
+var _uid = <?php echo isset($loggedInUser) && $loggedInUser ? intval($loggedInUser['id']) : 0; ?>;
 function enrollCourse(courseId, isFree) {
     if (isFree) {
         showToast('Enrolling', 'Please wait...', 'success');

@@ -78,7 +78,7 @@
 </div>
 
 <script>
-var _uid = <?php echo $loggedInUser ? intval($loggedInUser['id']) : 0; ?>;
+var _uid = <?php echo (isset($loggedInUser) && $loggedInUser) ? intval($loggedInUser['id']) : 0; ?>;
 var allCourses = [];
 
 function showToast(msg, type) {
